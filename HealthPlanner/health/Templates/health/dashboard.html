@@ -10,6 +10,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
             <span class="navbar-brand">Health Planner</span>
+            <span class="text-white-50 small ms-3">Welcome back, {{ request.user.username }}</span>
             <div class="ms-auto">
                 <form method="post" action="{% url 'health:logout' %}">
                     {% csrf_token %}
@@ -21,7 +22,8 @@
 
     <main class="container py-5">
         <div class="p-4 bg-white rounded shadow-sm">
-            <h1 class="h3 mb-3">Welcome, {{ request.user.username }}!</h1>
+            <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.username }}!</h1>
+            <p class="text-muted mb-3">Great to see you. Here is your personal Health Planner home.</p>
             <p class="mb-0">Your Health Planner account is ready. Start tracking your goals and routines.</p>
         </div>
     </main>
