@@ -3,143 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create account – Health Planner</title>
+    <title>Create account - Health Planner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --hp-green: #2f7d5b;
-            --hp-green-dark: #245f45;
-            --hp-bg: #f1f8f4;
-            --hp-text-muted: #4b5f56;
+            --hp-green: #1f8a57;
+            --hp-green-dark: #166a42;
+            --hp-panel: #2a9d65;
+            --hp-page: #f3f5f4;
         }
 
         body {
-            background: linear-gradient(160deg, #e8f5ed 0%, #f7fbf9 55%, #ffffff 100%);
+            background: var(--hp-page);
             font-family: "Inter", "Segoe UI", sans-serif;
         }
 
         .auth-shell {
-            max-width: 980px;
-            margin: 3.5rem auto;
-        }
-
-        .auth-brand {
-            background: radial-gradient(circle at bottom left, #95d5b2 0%, var(--hp-green) 60%);
-            color: #ffffff;
-            border-radius: 1rem 0 0 1rem;
-            min-height: 100%;
-        }
-
-        .auth-brand h1 {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .auth-brand p,
-        .auth-brand li {
-            color: rgba(255, 255, 255, 0.9);
+            max-width: 900px;
+            margin: 4rem auto;
         }
 
         .auth-card {
             border: none;
-            border-radius: 0 1rem 1rem 0;
-            background: #ffffff;
+            border-radius: 0.35rem;
+            overflow: hidden;
         }
 
-        .auth-card .form-control {
-            border-radius: 0.6rem;
-            border-color: #d3e3da;
+        .brand-panel {
+            background: linear-gradient(145deg, #18784b, var(--hp-panel));
+            color: #fff;
+            min-height: 100%;
         }
 
-        .auth-card .form-control:focus {
-            border-color: var(--hp-green);
-            box-shadow: 0 0 0 0.2rem rgba(47, 125, 91, 0.2);
+        .brand-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .brand-copy {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .brand-list {
+            margin: 0;
+            padding-left: 1rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .form-panel {
+            background: #fff;
+        }
+
+        .form-title {
+            font-size: 1.35rem;
+            font-weight: 600;
+        }
+
+        .form-subtitle {
+            color: #6d7471;
+            font-size: 0.9rem;
         }
 
         .btn-health {
-            background-color: var(--hp-green);
+            background: var(--hp-green);
             border-color: var(--hp-green);
         }
 
-        .btn-health:hover,
-        .btn-health:focus {
-            background-color: var(--hp-green-dark);
+        .btn-health:hover {
+            background: var(--hp-green-dark);
             border-color: var(--hp-green-dark);
-        }
-
-        .auth-subtitle {
-            color: var(--hp-text-muted);
-        }
-
-        @media (max-width: 767.98px) {
-            .auth-brand {
-                border-radius: 1rem 1rem 0 0;
-            }
-            .auth-card {
-                border-radius: 0 0 1rem 1rem;
-            }
         }
     </style>
 </head>
-<body class="min-vh-100">
-    <div class="container auth-shell">
-        <div class="row g-0 shadow-lg">
-            <div class="col-md-5 p-4 p-lg-5 auth-brand d-flex flex-column justify-content-center">
-                <h1>Health Planner</h1>
-                <p class="mt-3 mb-4">Create your account and start building healthier routines today.</p>
-                <ul class="ps-3 mb-0">
-                    <li>Set practical wellness goals</li>
-                    <li>Plan balanced meals ahead</li>
-                    <li>Track progress one day at a time</li>
-                </ul>
-            </div>
-            <div class="col-md-7">
-                <div class="card h-100 auth-card">
-                    <div class="card-body p-4 p-lg-5">
-                        <h2 class="h4 mb-2">Create your account</h2>
-                        <p class="auth-subtitle mb-4">Join Health Planner to keep your plan consistent.</p>
-
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger py-2" role="alert">
-                                {{ form.non_field_errors }}
-                            </div>
-                        {% endif %}
-
-                        <form method="post" action="{% url 'health:register' %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="id_username" class="form-label">Username</label>
-                                <input type="text" name="username" id="id_username" class="form-control {% if form.username.errors %}is-invalid{% endif %}" placeholder="Choose a username" autofocus maxlength="150" value="{{ form.username.value|default:'' }}" required>
-                                {% if form.username.errors %}
-                                    <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
-                                {% elif form.username.help_text %}
-                                    <div class="form-text">{{ form.username.help_text }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label for="id_password1" class="form-label">Password</label>
-                                <input type="password" name="password1" id="id_password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" placeholder="Create a secure password" required>
-                                {% if form.password1.errors %}
-                                    <div class="invalid-feedback">{{ form.password1.errors.0 }}</div>
-                                {% elif form.password1.help_text %}
-                                    <div class="form-text">{{ form.password1.help_text }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-4">
-                                <label for="id_password2" class="form-label">Confirm password</label>
-                                <input type="password" name="password2" id="id_password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" placeholder="Re-enter your password" required>
-                                {% if form.password2.errors %}
-                                    <div class="invalid-feedback">{{ form.password2.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <button type="submit" class="btn btn-health text-white w-100 mb-2">Create account</button>
-                            <a href="{% url 'health:login' %}" class="btn btn-outline-secondary w-100">Already have an account? Log in</a>
-                        </form>
-                    </div>
+<body class="bg-light min-vh-100">
+    <main class="container auth-shell">
+        <div class="card shadow auth-card">
+            <div class="row g-0">
+                <div class="col-md-5 p-4 p-lg-5 brand-panel d-flex flex-column justify-content-center">
+                    <h1 class="brand-title mb-3">Health Planner</h1>
+                    <p class="brand-copy">Create your account and start building healthier routines today.</p>
+                    <ul class="brand-list mt-2">
+                        <li>Set practical wellness goals</li>
+                        <li>Plan balanced meals ahead</li>
+                        <li>Track progress one day at a time</li>
+                    </ul>
+                </div>
+                <div class="col-md-7 form-panel p-4 p-lg-5">
+                    <h2 class="form-title mb-2">Create your account</h2>
+                    <p class="form-subtitle mb-4">Join Health Planner to keep your plan consistent.</p>
+                    <form method="post" action="{% url 'health:register' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            <input type="text" name="username" id="id_username" class="form-control {% if form.username.errors %}is-invalid{% endif %}" placeholder="Create a username" required>
+                            {% if form.username.errors %}<div class="invalid-feedback">{{ form.username.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Password</label>
+                            <input type="password" name="password1" id="id_password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" placeholder="Create your password" required>
+                            {% if form.password1.errors %}<div class="invalid-feedback">{{ form.password1.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_password2" class="form-label">Confirm password</label>
+                            <input type="password" name="password2" id="id_password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" placeholder="Confirm your password" required>
+                            {% if form.password2.errors %}<div class="invalid-feedback">{{ form.password2.errors.0 }}</div>{% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-health text-white w-100">Create account</button>
+                    </form>
+                    <a href="{% url 'health:login' %}" class="btn btn-outline-secondary w-100 mt-2">Already have an account? Log in</a>
                 </div>
             </div>
         </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    </main>
 </body>
 </html>
