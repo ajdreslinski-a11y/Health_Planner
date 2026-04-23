@@ -111,9 +111,9 @@
                             </div>
                         {% endif %}
 
-                        <form method="post" action="{% url 'login' %}">
+                        <form method="post" action="{% url 'health:login' %}">
                             {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ next|default:'/grocery_list/' }}">
+                            <input type="hidden" name="next" value="{{ next|default:'/'}">
                             <div class="mb-3">
                                 <label for="id_username" class="form-label">Username</label>
                                 <input type="text" name="username" id="id_username" class="form-control" placeholder="Enter your username" autofocus required maxlength="150" value="{{ form.username.value|default:'' }}">
@@ -123,7 +123,7 @@
                                 <input type="password" name="password" id="id_password" class="form-control" placeholder="Enter your password" required>
                             </div>
                             <button type="submit" class="btn btn-health text-white w-100 mb-2">Log in</button>
-                            <a href="/grocery_list/register/" class="btn btn-outline-secondary w-100">Create an account</a>
+                            <a href="{% url 'health:register' %}" class="btn btn-outline-secondary w-100">Create an account</a>
                         </form>
                     </div>
                 </div>
