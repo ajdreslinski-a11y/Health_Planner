@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log in – Health Planner</title>
+    <title>Create account – Health Planner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -24,7 +24,7 @@
         }
 
         .auth-brand {
-            background: radial-gradient(circle at top right, #74c69d 0%, var(--hp-green) 60%);
+            background: radial-gradient(circle at bottom left, #95d5b2 0%, var(--hp-green) 60%);
             color: #ffffff;
             border-radius: 1rem 0 0 1rem;
             min-height: 100%;
@@ -86,44 +86,54 @@
         <div class="row g-0 shadow-lg">
             <div class="col-md-5 p-4 p-lg-5 auth-brand d-flex flex-column justify-content-center">
                 <h1>Health Planner</h1>
-                <p class="mt-3 mb-4">Stay consistent with your wellness goals, meal prep, and daily habits.</p>
+                <p class="mt-3 mb-4">Create your account and start building healthier routines today.</p>
                 <ul class="ps-3 mb-0">
-                    <li>Track your daily routine</li>
-                    <li>Keep meal plans organized</li>
-                    <li>Build healthier habits over time</li>
+                    <li>Set practical wellness goals</li>
+                    <li>Plan balanced meals ahead</li>
+                    <li>Track progress one day at a time</li>
                 </ul>
             </div>
             <div class="col-md-7">
                 <div class="card h-100 auth-card">
                     <div class="card-body p-4 p-lg-5">
-                        <h2 class="h4 mb-2">Welcome back</h2>
-                        <p class="auth-subtitle mb-4">Log in to continue planning your healthy week.</p>
+                        <h2 class="h4 mb-2">Create your account</h2>
+                        <p class="auth-subtitle mb-4">Join Health Planner to keep your plan consistent.</p>
 
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} py-2" role="alert">{{ message }}</div>
-                            {% endfor %}
-                        {% endif %}
-
-                        {% if form.errors %}
+                        {% if form.non_field_errors %}
                             <div class="alert alert-danger py-2" role="alert">
-                                Invalid username or password. Please try again.
+                                {{ form.non_field_errors }}
                             </div>
                         {% endif %}
 
-                        <form method="post" action="{% url 'login' %}">
+                        <form method="post" action="{% url 'register' %}">
                             {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ next|default:'/grocery_list/' }}">
                             <div class="mb-3">
                                 <label for="id_username" class="form-label">Username</label>
-                                <input type="text" name="username" id="id_username" class="form-control" placeholder="Enter your username" autofocus required maxlength="150" value="{{ form.username.value|default:'' }}">
+                                <input type="text" name="username" id="id_username" class="form-control {% if form.username.errors %}is-invalid{% endif %}" placeholder="Choose a username" autofocus maxlength="150" value="{{ form.username.value|default:'' }}" required>
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+                                {% elif form.username.help_text %}
+                                    <div class="form-text">{{ form.username.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_password1" class="form-label">Password</label>
+                                <input type="password" name="password1" id="id_password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" placeholder="Create a secure password" required>
+                                {% if form.password1.errors %}
+                                    <div class="invalid-feedback">{{ form.password1.errors.0 }}</div>
+                                {% elif form.password1.help_text %}
+                                    <div class="form-text">{{ form.password1.help_text }}</div>
+                                {% endif %}
                             </div>
                             <div class="mb-4">
-                                <label for="id_password" class="form-label">Password</label>
-                                <input type="password" name="password" id="id_password" class="form-control" placeholder="Enter your password" required>
+                                <label for="id_password2" class="form-label">Confirm password</label>
+                                <input type="password" name="password2" id="id_password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" placeholder="Re-enter your password" required>
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback">{{ form.password2.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            <button type="submit" class="btn btn-health text-white w-100 mb-2">Log in</button>
-                            <a href="/grocery_list/register/" class="btn btn-outline-secondary w-100">Create an account</a>
+                            <button type="submit" class="btn btn-health text-white w-100 mb-2">Create account</button>
+                            <a href="{% url 'login' %}" class="btn btn-outline-secondary w-100">Already have an account? Log in</a>
                         </form>
                     </div>
                 </div>
