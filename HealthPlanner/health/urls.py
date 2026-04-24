@@ -7,6 +7,7 @@ app_name = "health"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("users/new/", views.create_recent_user, name="create_recent_user"),
     path(
         "login/",
         auth_views.LoginView.as_view(

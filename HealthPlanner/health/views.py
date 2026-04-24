@@ -1,8 +1,10 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.db.utils import OperationalError, ProgrammingError
 from django.shortcuts import redirect, render
 
+from .forms import RecentUserForm
 from .models import Food, Goal, Meal, MealItem, Progress, User
 
 
@@ -53,3 +55,17 @@ def dashboard(request):
         context["db_ready"] = False
 
     return render(request, "health/dashboard.html", context)
+
+
+@login_required
+def create_recent_user(request):
+    if request.method == "POST":
+        form = RecentUserForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"{user.name} was added to Recent Users.")
+            return redirect("health:dashboard")
+    else:
+        form = RecentUserForm()
+
+    return render(request, "health/user_form.html", {"form": form})
