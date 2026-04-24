@@ -24,7 +24,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark topbar py-2">
         <div class="container">
             <span class="navbar-brand fw-semibold">Health Planner</span>
-            <span class="text-white-50 small ms-3">Welcome back, {{ request.user.username }}</span>
+            <span class="text-white-50 small ms-3">Welcome back, {{ request.user.name|default:request.user.email|default:request.user.username }}</span>
             <div class="ms-auto">
                 <form method="post" action="{% url 'health:logout' %}">{% csrf_token %}<button type="submit" class="btn btn-outline-light btn-sm">Log out</button></form>
             </div>
@@ -32,9 +32,17 @@
     </nav>
     <main class="container py-5">
         <div class="p-4 bg-white border rounded shadow-sm">
-            <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.username }}!</h1>
+            <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.name|default:request.user.email|default:request.user.username }}!</h1>
             <p class="text-muted mb-0">Your Health Planner account is ready. Start tracking your goals and routines.</p>
         </div>
+
+        {% if messages %}
+            <div class="mt-4">
+                {% for message in messages %}
+                    <div class="alert alert-success mb-0">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
 
         {% if not db_ready %}
             <div class="alert alert-warning mt-4 mb-0">
@@ -57,8 +65,14 @@
                     <div class="card shadow-sm">
                         <div class="card-header fw-semibold">Recent Users</div>
                         <ul class="list-group list-group-flush">
+                            <li class="list-group-item p-0">
+                                <a href="{% url 'health:create_recent_user' %}" class="d-flex justify-content-between align-items-center px-3 py-3 text-decoration-none">
+                                    <span class="fw-medium text-success">Add a recent user</span>
+                                    <span class="text-muted small">Open form</span>
+                                </a>
+                            </li>
                             {% for u in latest_users %}
-                                <li class="list-group-item d-flex justify-content-between"><span>{{ u.name }} ({{ u.email }})</span><span class="text-muted">{{ u.created_at|date:"M d, Y" }}</span></li>
+                                <li class="list-group-item d-flex justify-content-between"><span>{{ u.name }}</span><span class="text-muted">{{ u.created_at|date:"M d, Y" }}</span></li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No users yet.</li>
                             {% endfor %}
