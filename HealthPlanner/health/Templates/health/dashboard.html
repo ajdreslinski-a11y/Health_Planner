@@ -14,6 +14,10 @@
         .topbar {
             background: #1f8a57;
         }
+        .stat-card {
+            border: 0;
+            border-left: 4px solid #1f8a57;
+        }
     </style>
 </head>
 <body class="bg-light min-vh-100">
@@ -31,6 +35,98 @@
             <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.username }}!</h1>
             <p class="text-muted mb-0">Your Health Planner account is ready. Start tracking your goals and routines.</p>
         </div>
+
+        {% if not db_ready %}
+            <div class="alert alert-warning mt-4 mb-0">
+                Health tables are not ready yet. Run <code>python manage.py makemigrations</code> and <code>python manage.py migrate</code>.
+            </div>
+        {% else %}
+            <section class="mt-4">
+                <div class="row g-3">
+                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Users</div><div class="h4 mb-0">{{ stats.users }}</div></div></div></div>
+                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Foods</div><div class="h4 mb-0">{{ stats.foods }}</div></div></div></div>
+                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Goals</div><div class="h4 mb-0">{{ stats.goals }}</div></div></div></div>
+                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Meals</div><div class="h4 mb-0">{{ stats.meals }}</div></div></div></div>
+                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Meal Items</div><div class="h4 mb-0">{{ stats.meal_items }}</div></div></div></div>
+                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Progress</div><div class="h4 mb-0">{{ stats.progress_entries }}</div></div></div></div>
+                </div>
+            </section>
+
+            <section class="row g-4 mt-1">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">Recent Users</div>
+                        <ul class="list-group list-group-flush">
+                            {% for u in latest_users %}
+                                <li class="list-group-item d-flex justify-content-between"><span>{{ u.name }} ({{ u.email }})</span><span class="text-muted">{{ u.created_at|date:"M d, Y" }}</span></li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No users yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">Food Library</div>
+                        <ul class="list-group list-group-flush">
+                            {% for food in latest_foods %}
+                                <li class="list-group-item d-flex justify-content-between"><span>{{ food.name }}</span><span class="text-muted">{{ food.calories_per_100g }} cal/100g</span></li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No foods yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">Latest Goals</div>
+                        <ul class="list-group list-group-flush">
+                            {% for goal in latest_goals %}
+                                <li class="list-group-item">{{ goal.user.name }} - {{ goal.get_goal_type_display }} ({{ goal.daily_calories }} cal/day)</li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No goals yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">Latest Meals</div>
+                        <ul class="list-group list-group-flush">
+                            {% for meal in latest_meals %}
+                                <li class="list-group-item">{{ meal.user.name }} - {{ meal.name }} ({{ meal.get_meal_type_display }})</li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No meals yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">Latest Meal Items</div>
+                        <ul class="list-group list-group-flush">
+                            {% for item in latest_meal_items %}
+                                <li class="list-group-item">{{ item.food.name }} in {{ item.meal.name }} - {{ item.quantity_grams }}g</li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No meal items yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">Recent Progress Entries</div>
+                        <ul class="list-group list-group-flush">
+                            {% for p in latest_progress %}
+                                <li class="list-group-item">{{ p.user.name }} - {{ p.date }} ({{ p.daily_calories_consumed }} cal)</li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No progress entries yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
     </main>
 </body>
 </html>
