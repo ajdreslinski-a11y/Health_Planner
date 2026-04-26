@@ -77,7 +77,7 @@
                                     <span class="text-muted">{{ u.created_at|date:"M d, Y" }}</span>
                                 </li>
                             {% empty %}
-                                <li class="list-group-item text-muted">No users yet.</li>
+                                <li class="list-group-item text-muted">No users yet for this account.</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -96,7 +96,7 @@
                 </div>
                 <div class="col-lg-6">
                     <div class="card shadow-sm">
-                        <div class="card-header fw-semibold">Latest Goals</div>
+                        <div class="card-header fw-semibold">Health Goals</div>
                         <ul class="list-group list-group-flush">
                             {% for goal in latest_goals %}
                                 <li class="list-group-item">{{ goal.user.name }} - {{ goal.get_goal_type_display }} ({{ goal.daily_calories }} cal/day)</li>
