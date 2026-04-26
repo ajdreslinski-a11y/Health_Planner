@@ -1,5 +1,6 @@
-from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.db import models
 
 
 class UserManager(BaseUserManager):
@@ -15,12 +16,19 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     user_id = models.AutoField(primary_key=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     password = models.CharField(max_length=128)
     name = models.CharField(max_length=100)
     age = models.PositiveIntegerField()
     height = models.DecimalField(max_digits=5, decimal_places=2, help_text="Height in ft")
     weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight in lbs")
+    account = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recent_users",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = UserManager()
@@ -30,6 +38,12 @@ class User(AbstractBaseUser):
 
     class Meta:
         db_table = 'users'
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account", "email"],
+                name="unique_recent_user_email_per_account",
+            )
+        ]
 
     def __str__(self):
         return self.email

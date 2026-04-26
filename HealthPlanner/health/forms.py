@@ -4,6 +4,11 @@ from .models import User
 
 
 class RecentUserForm(forms.ModelForm):
+    def __init__(self, *args, account=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if account is not None:
+            self.instance.account = account
+
     class Meta:
         model = User
         fields = ["name", "email", "age", "height", "weight"]
