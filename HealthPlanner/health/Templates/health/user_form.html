@@ -30,8 +30,8 @@
     </nav>
     <main class="container py-5">
         <div class="form-shell bg-white border rounded shadow-sm p-4 p-md-5">
-            <h1 class="h3 mb-2">Add user info</h1>
-            <p class="text-muted mb-4">Enter the details from the user model, then we'll send you back to the dashboard and show the new name in Recent Users.</p>
+            <h1 class="h3 mb-2">{{ form_title|default:"Add user info" }}</h1>
+            <p class="text-muted mb-4">{{ form_description|default:"Enter the details from the user model, then we'll send you back to the dashboard and show the new name in Recent Users." }}</p>
 
             {% if form.non_field_errors %}
                 <div class="alert alert-danger">
@@ -58,7 +58,7 @@
                     {% endfor %}
                 </div>
                 <div class="d-flex gap-2 mt-4">
-                    <button type="submit" class="btn btn-success">Save user</button>
+                    <button type="submit" class="btn btn-success">{{ submit_label|default:"Save user" }}</button>
                     <a href="{% url 'health:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
                 </div>
             </form>
