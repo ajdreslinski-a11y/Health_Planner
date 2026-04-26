@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.db.utils import OperationalError, ProgrammingError
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import RecentUserForm
 from .models import Food, Goal, Meal, MealItem, Progress, User
@@ -68,4 +68,44 @@ def create_recent_user(request):
     else:
         form = RecentUserForm()
 
-    return render(request, "health/user_form.html", {"form": form})
+    return render(
+        request,
+        "health/user_form.html",
+        {
+            "form": form,
+            "form_title": "Add user info",
+            "form_description": (
+                "Enter the details from the user model, then we'll send you back "
+                "to the dashboard and show the new name in Recent Users."
+            ),
+            "submit_label": "Save user",
+        },
+    )
+
+
+@login_required
+def edit_recent_user(request, user_id):
+    recent_user = get_object_or_404(User, pk=user_id)
+
+    if request.method == "POST":
+        form = RecentUserForm(request.POST, instance=recent_user)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"{user.name}'s info was updated.")
+            return redirect("health:dashboard")
+    else:
+        form = RecentUserForm(instance=recent_user)
+
+    return render(
+        request,
+        "health/user_form.html",
+        {
+            "form": form,
+            "form_title": f"Edit {recent_user.name}",
+            "form_description": (
+                "Update this user's name, age, height, weight, or email, then save "
+                "to refresh what appears in Recent Users."
+            ),
+            "submit_label": "Save changes",
+        },
+    )
