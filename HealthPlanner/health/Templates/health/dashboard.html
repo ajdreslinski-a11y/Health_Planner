@@ -109,24 +109,6 @@
             <section class="row g-4 mt-1">
                 <div class="col-lg-6">
                     <div class="card shadow-sm">
-                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-                            <span>Recent Users</span>
-                            <a class="btn btn-outline-success btn-sm" href="{% url 'health:create_recent_user' %}">Add a recent user</a>
-                        </div>
-                        <ul class="list-group list-group-flush">
-                            {% for u in latest_recent_users %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>{{ u.name }}</span>
-                                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'health:edit_recent_user' u.user_id %}">Edit</a>
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item text-muted">No recent users yet.</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card shadow-sm">
                         <div class="card-header fw-semibold">Food Library</div>
                         <ul class="list-group list-group-flush">
                             {% for food in latest_foods %}
