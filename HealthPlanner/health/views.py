@@ -8,6 +8,7 @@ from datetime import date
 
 from .forms import AccountSignUpForm, FoodForm, MealItemForm, RecentUserForm
 from .models import Food, Goal, Meal, MealItem, Progress, User
+from .nutrition import build_goal_suggestions, compute_maintenance, dashboard_copy
 
 
 def register(request):
@@ -49,6 +50,40 @@ def onboarding_goal(request):
 
 @login_required
 def dashboard(request):
+    if request.method == "POST" and request.POST.get("action") == "maintenance":
+        try:
+            w = float(request.POST.get("calc_weight_lb") or 0)
+            h_ft = float(request.POST.get("calc_height_ft") or 0)
+            age = int(request.POST.get("calc_age") or 0)
+            sex_raw = (request.POST.get("calc_sex") or "").strip()
+            sex = sex_raw if sex_raw in ("M", "F") else None
+            activity = request.POST.get("calc_activity") or "moderate"
+            if w > 0 and h_ft > 0 and age > 0:
+                result = compute_maintenance(
+                    weight_lbs=w,
+                    height_ft=h_ft,
+                    age=age,
+                    sex=sex,
+                    activity_level=activity,
+                )
+                request.session["maintenance_result"] = result
+                messages.success(
+                    request,
+                    "Estimated maintenance calories are ready below.",
+                )
+                return redirect("health:dashboard")
+            messages.error(
+                request,
+                "Weight, height (ft), and age must be positive numbers.",
+            )
+        except (TypeError, ValueError):
+            messages.error(
+                request,
+                "Could not parse the calculator inputs. Use numbers only.",
+            )
+
+    maintenance_snapshot = request.session.pop("maintenance_result", None)
+
     context = {
         "db_ready": True,
         "stats": {},
@@ -59,6 +94,10 @@ def dashboard(request):
         "latest_progress": [],
         "latest_recent_users": [],
         "calorie_tracker": {},
+        "maintenance_result": maintenance_snapshot,
+        "coach_tips": [],
+        "coach_bmi": None,
+        "coach_tdee_estimate": None,
     }
 
     try:
@@ -86,6 +125,18 @@ def dashboard(request):
         context["latest_recent_users"] = User.objects.filter(
             account=request.user
         ).order_by("-created_at")[:5]
+
+        u = request.user
+        coach_tips, coach_bmi, coach_tdee = dashboard_copy(
+            weight_lbs=float(u.weight) if u.weight is not None else None,
+            height_ft=float(u.height) if u.height is not None else None,
+            age=u.age,
+            sex=getattr(u, "sex", None),
+            onboarding_goal=getattr(u, "onboarding_goal", None),
+        )
+        context["coach_tips"] = coach_tips
+        context["coach_bmi"] = coach_bmi
+        context["coach_tdee_estimate"] = coach_tdee
         
         # Calorie Tracker: Goal setting + Food logging + Daily remaining
         today = date.today()
@@ -96,29 +147,45 @@ def dashboard(request):
         ).order_by("-start_date").first()
         
         if active_goal:
-            # Get today's total calories from meals
             today_meals = Meal.objects.filter(
                 user=request.user,
                 date=today
-            ).aggregate(total=Sum('total_calories'))
-            consumed = today_meals['total'] or 0
+            ).aggregate(total=Sum("total_calories"))
+            raw_total = today_meals["total"]
+            consumed_units = round(float(raw_total or 0))
+            daily_goal_units = active_goal.daily_calories
             
-            # Calculate remaining
-            remaining = active_goal.daily_calories - consumed
+            ratio_pct = (
+                (consumed_units / float(daily_goal_units)) * 100 if daily_goal_units > 0 else 0
+            )
+            bar_pct = max(0, min(100, int(round(ratio_pct))))
+            pct_label = max(0, int(round(ratio_pct)))
+            overflow_units = consumed_units - daily_goal_units
             
-            # Determine status for color change (at 90% or more of limit)
-            if consumed >= active_goal.daily_calories * 0.9:
+            consumed = consumed_units
+            over_goal = daily_goal_units > 0 and overflow_units > 0
+
+            if over_goal:
+                status = "over"
+            elif daily_goal_units > 0 and consumed_units >= int(
+                daily_goal_units * 0.9
+            ):
                 status = "warning"
             else:
                 status = "normal"
-            
+
+            remaining_int = max(daily_goal_units - consumed_units, 0)
+
             context["calorie_tracker"] = {
-                "goal": active_goal.daily_calories,
+                "goal": daily_goal_units,
                 "consumed": consumed,
-                "remaining": remaining,
+                "remaining": remaining_int,
+                "pct_label": pct_label,
+                "over_goal": over_goal,
+                "overflow_units": max(overflow_units, 0) if over_goal else 0,
                 "status": status,
-                "percentage": min(100, int((consumed / active_goal.daily_calories) * 100)) if active_goal.daily_calories > 0 else 0,
-                "progress_style": f"width: {min(100, int((consumed / active_goal.daily_calories) * 100))}%" if active_goal.daily_calories > 0 else "width: 0%",
+                "percentage": bar_pct,
+                "progress_style": f"width: {bar_pct}%",
             }
     except (OperationalError, ProgrammingError):
         context["db_ready"] = False
@@ -190,7 +257,6 @@ def create_goal(request):
         form = GoalForm(request.POST)
         if form.is_valid():
             goal = form.save(commit=False)
-            # Associate the logged-in user as the user for this goal
             goal.user = request.user
             goal.save()
             messages.success(request, "Goal created successfully.")
@@ -198,46 +264,25 @@ def create_goal(request):
     else:
         form = GoalForm()
     
-    # Get user's current weight from the custom User model
-    custom_user = User.objects.filter(account=request.user).first()
-    user_weight = float(custom_user.weight) if custom_user and custom_user.weight else None
-    
-    # Calculate BMR using Mifflin-St Jeor formula (simplified)
-    # BMR ≈ 10 * weight(kg) - assuming moderate activity
-    if user_weight:
-        weight_kg = user_weight * 0.453592  # convert lbs to kg
-        base_bmr = int(10 * weight_kg)
-    else:
-        weight_kg = 70  # default weight in kg if not set
-        base_bmr = 2000  # default if no weight set
-    
-    # Goal suggestions based on goal type and current weight
-    goal_suggestions = {
-        "lose": {
-            "daily_calories": max(1200, base_bmr - 500),  # Create 500 cal deficit
-            "protein": int(weight_kg * 1.6),  # ~1.6g per kg body weight
-            "carbs": int((base_bmr - 500) * 0.3 / 4),  # 30% of calories from carbs
-            "fat": int((base_bmr - 500) * 0.25 / 9),  # 25% of calories from fat
-        },
-        "gain": {
-            "daily_calories": base_bmr + 500,  # Create 500 cal surplus
-            "protein": int(weight_kg * 2.0),  # ~2g per kg for muscle gain
-            "carbs": int((base_bmr + 500) * 0.45 / 4),  # 45% of calories from carbs
-            "fat": int((base_bmr + 500) * 0.30 / 9),  # 30% of calories from fat
-        },
-        "maintain": {
-            "daily_calories": base_bmr,
-            "protein": int(weight_kg * 1.2),  # ~1.2g per kg
-            "carbs": int(base_bmr * 0.35 / 4),  # 35% of calories from carbs
-            "fat": int(base_bmr * 0.30 / 9),  # 30% of calories from fat
-        },
-        "muscle gain": {
-            "daily_calories": base_bmr + 300,
-            "protein": int(weight_kg * 1.8),  # ~1.8g per kg
-            "carbs": int((base_bmr + 300) * 0.40 / 4),  # 40% of calories from carbs
-            "fat": int((base_bmr + 300) * 0.25 / 9),  # 25% of calories from fat
-        },
-    }
+    u = request.user
+    goal_descriptions, intro_blurbs = build_goal_suggestions(
+        weight_lbs=u.weight,
+        height_ft=u.height,
+        age=u.age,
+        sex=getattr(u, "sex", None),
+        onboarding_goal=getattr(u, "onboarding_goal", None),
+        activity_default="moderate",
+    )
+
+    trimmed = {}
+    for key, vals in goal_descriptions.items():
+        trimmed[key] = {
+            "daily_calories": vals["daily_calories"],
+            "protein": vals["protein"],
+            "carbs": vals["carbs"],
+            "fat": vals["fat"],
+            "note": vals.get("note", ""),
+        }
     
     return render(
         request,
@@ -245,10 +290,11 @@ def create_goal(request):
         {
             "form": form,
             "form_title": "Create Health Goal",
-            "form_description": "Select a goal type to see suggested values based on your weight, then customize your targets.",
+            "form_description": "Select a goal type to review macro targets tied to your height, weight, age, onboarding intent, then customize anything you need.",
             "submit_label": "Create Goal",
-            "goal_suggestions": goal_suggestions,
-            "user_weight": custom_user.weight if custom_user else None,
+            "goal_suggestions": trimmed,
+            "goal_intro_blurbs": intro_blurbs,
+            "user_weight": u.weight,
         },
     )
 

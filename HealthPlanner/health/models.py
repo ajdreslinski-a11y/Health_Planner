@@ -21,6 +21,10 @@ class User(AbstractBaseUser):
         ("gain_muscle", "Gain muscle"),
         ("maintain_weight", "Maintain weight"),
     ]
+    SEX_CHOICES = [
+        ("M", "Male"),
+        ("F", "Female"),
+    ]
 
     user_id = models.AutoField(primary_key=True)
     email = models.EmailField(unique=True)
@@ -29,6 +33,13 @@ class User(AbstractBaseUser):
     age = models.PositiveIntegerField()
     height = models.DecimalField(max_digits=5, decimal_places=2, help_text="Height in ft")
     weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight in lbs")
+    sex = models.CharField(
+        max_length=1,
+        choices=SEX_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Used for calorie estimates",
+    )
     onboarding_goal = models.CharField(
         max_length=20, choices=ONBOARDING_GOAL_CHOICES, blank=True, null=True
     )

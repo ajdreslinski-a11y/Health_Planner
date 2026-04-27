@@ -35,7 +35,7 @@
                 </div>
                 <div class="text-end">
                     <div class="small text-muted">Current totals</div>
-                    <div class="fw-semibold">{{ meal.total_calories }} cal</div>
+                    <div class="fw-semibold">{{ meal.total_calories|floatformat:0 }} cal</div>
                 </div>
             </div>
         </div>
@@ -94,11 +94,11 @@
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="fw-semibold">{{ item.food.name }}</div>
-                                    <div class="text-muted small">{{ item.quantity_grams }}g · {{ item.calories }} cal</div>
+                                    <div class="text-muted small">{{ item.quantity_grams|floatformat:0 }} g · {{ item.calories|floatformat:0 }} cal</div>
                                 </div>
                                 <div class="text-muted small text-end">
-                                    <div>{{ item.protein }}p</div>
-                                    <div>{{ item.carbs }}c · {{ item.fat }}f</div>
+                                    <div>{{ item.protein|floatformat:0 }}p</div>
+                                    <div>{{ item.carbs|floatformat:0 }}c · {{ item.fat|floatformat:0 }}f</div>
                                 </div>
                             </li>
                         {% empty %}

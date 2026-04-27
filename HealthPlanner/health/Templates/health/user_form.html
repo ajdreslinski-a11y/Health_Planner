@@ -68,31 +68,42 @@
                     {% endfor %}
                 </div>
 
+                {% if goal_intro_blurbs %}
+                <div class="mt-4 small text-muted mb-3">
+                    {% for blurb in goal_intro_blurbs %}
+                    <p class="mb-1">{{ blurb }}</p>
+                    {% endfor %}
+                    {% if user_weight %}
+                    <p class="mb-0 mt-2">Profile weight logged: {{ user_weight }} lbs.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 {% if goal_suggestions %}
                 <div class="mt-4">
-                    <h6 class="fw-semibold mb-3">Goal Suggestions</h6>
+                    <h6 class="fw-semibold mb-3">Suggested macro presets</h6>
+                    {% if user_weight %}
                     <p class="text-muted small mb-3">
-                        {% if user_weight %}
-                        Based on your current weight of {{ user_weight }} lbs:
-                        {% else %}
-                        Set your weight in your profile to get personalized suggestions.
-                        {% endif %}
-                        Select a goal type above, then click a suggestion below to auto-fill the values:
+                        Macros scale with BMI, onboarding intent (if set), and moderate activity TDEE—not a lab test.
+                        Click <span class="text-success fw-semibold">Apply</span> to auto-fill editable fields below.
                     </p>
+                    {% else %}
+                    <p class="text-muted small mb-3">Tell us your weight to sharpen these previews.</p>
+                    {% endif %}
                     <div class="row g-2">
                         {% for type, values in goal_suggestions.items %}
-                        <div class="col-6 col-md-3">
+                        <div class="col-md-6 col-xl-4">
                             <div class="card suggestion-card">
-                                <div class="card-body p-3">
-                                    <div class="fw-semibold text-capitalize mb-2">{{ type }}</div>
+                                <div class="card-body p-3 d-flex flex-column gap-2">
+                                    <div class="fw-semibold text-capitalize mb-1">{{ type }}</div>
                                     <div class="small text-muted">
                                         <div>{{ values.daily_calories }} cal</div>
-                                        <div>{{ values.protein }}g protein</div>
-                                        <div>{{ values.carbs }}g carbs</div>
-                                        <div>{{ values.fat }}g fat</div>
+                                        <div>{{ values.protein }} g protein · {{ values.carbs }} g carbs · {{ values.fat }} g fat</div>
+                                        {% if values.note %}<div class="mt-1 text-muted fst-italic">{{ values.note }}</div>{% endif %}
                                     </div>
-                                    <button type="button" class="btn btn-outline-success btn-sm suggestion-btn mt-2" 
-                                        onclick="applySuggestion('{{ type }}')">Use this</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm suggestion-btn mt-1 align-self-start" data-goal-type="{{ type }}">
+                                        Apply
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -110,18 +121,30 @@
     </main>
 
     {% if goal_suggestions %}
+    {{ goal_suggestions|json_script:"goal-suggestions-json" }}
     <script>
-        const suggestions = {{ goal_suggestions|safe }};
-
-        function applySuggestion(goalType) {
-            const values = suggestions[goalType];
-            if (values) {
-                document.getElementById('id_daily_calories').value = values.daily_calories;
-                document.getElementById('id_protein').value = values.protein;
-                document.getElementById('id_carbs').value = values.carbs;
-                document.getElementById('id_fat').value = values.fat;
+        function wireGoalSuggestions() {
+            const blob = document.getElementById("goal-suggestions-json");
+            if (!blob) {
+                return;
             }
+            const suggestionsPayload = JSON.parse(blob.textContent);
+            document.querySelectorAll(".suggestion-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const goalType = btn.dataset.goalType;
+                    const payload = suggestionsPayload[goalType];
+                    if (!payload) {
+                        return;
+                    }
+                    document.getElementById("id_daily_calories").value = payload.daily_calories;
+                    document.getElementById("id_protein").value = payload.protein;
+                    document.getElementById("id_carbs").value = payload.carbs;
+                    document.getElementById("id_fat").value = payload.fat;
+                });
+            });
         }
+
+        wireGoalSuggestions();
     </script>
     {% endif %}
 </body>

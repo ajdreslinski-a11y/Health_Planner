@@ -18,6 +18,13 @@
             border: 0;
             border-left: 4px solid #1f8a57;
         }
+        .side-card small {
+            line-height: 1.35;
+        }
+        .coach-card {
+            border-left: 4px solid #217a94;
+            background: #f7fafb;
+        }
     </style>
 </head>
 <body class="bg-light min-vh-100">
@@ -30,13 +37,13 @@
             </div>
         </div>
     </nav>
-    <main class="container py-5">
-        <div class="p-4 bg-white border rounded shadow-sm">
+    <main class="container py-4 py-lg-5">
+        <div class="p-4 bg-white border rounded shadow-sm mb-4">
             <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.name|default:request.user.email }}!</h1>
-            <p class="text-muted mb-0">Your Health Planner account is ready. Start tracking your goals and routines.</p>
+            <p class="text-muted mb-0">Track meals against your calorie goal—tools on the side help with TDEE and macro ideas.</p>
         </div>
 
-        <div class="mt-4">
+        <div class="mb-4">
             <div class="row g-2">
                 <div class="col-auto">
                     <a href="{% url 'health:create_goal' %}" class="btn btn-success">+ New Goal</a>
@@ -50,41 +57,64 @@
         {% if messages %}
             <div class="mt-4">
                 {% for message in messages %}
-                    <div class="alert alert-success mb-0">{{ message }}</div>
+                    {% if message.tags == 'success' %}
+                    <div class="alert alert-success mb-2">{{ message }}</div>
+                    {% elif message.tags == 'error' %}
+                    <div class="alert alert-danger mb-2">{{ message }}</div>
+                    {% elif message.tags == 'warning' %}
+                    <div class="alert alert-warning mb-2">{{ message }}</div>
+                    {% else %}
+                    <div class="alert alert-info mb-2">{{ message }}</div>
+                    {% endif %}
                 {% endfor %}
             </div>
         {% endif %}
 
+        <div class="row g-4">
+            <div class="col-lg-8">
+
         {% if calorie_tracker.goal %}
-        <div class="mt-4">
+        <div class="mb-4">
             <div class="card shadow-sm">
-                <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-                    <span>Calorie Tracker</span>
-                    <span class="badge bg-secondary">{{ calorie_tracker.remaining }} cal remaining</span>
+                <div class="card-header fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>Today's calories</span>
+                    {% if calorie_tracker.over_goal %}
+                    <span class="badge bg-danger">{{ calorie_tracker.overflow_units }} cal over goal</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ calorie_tracker.remaining }} cal left</span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
-                    <div class="mb-2 d-flex justify-content-between">
-                        <span>Consumed: {{ calorie_tracker.consumed }} cal</span>
-                        <span>Goal: {{ calorie_tracker.goal }} cal</span>
+                    <div class="mb-2 d-flex justify-content-between small">
+                        <span>Eaten <strong>{{ calorie_tracker.consumed }}</strong></span>
+                        <span>Daily target <strong>{{ calorie_tracker.goal }}</strong></span>
                     </div>
-                    <div class="progress" style="height: 24px">
-                        {% if calorie_tracker.status == "warning" %}
-                        <div class="progress-bar bg-warning" role="progressbar" data-width="{{ calorie_tracker.percentage }}">
-                            {{ calorie_tracker.percentage }}%
-                        </div>
+                    <div class="progress rounded-pill mb-2" style="height: 26px">
+                        {% if calorie_tracker.status == "over" %}
+                        <div class="progress-bar bg-danger rounded-pill text-white fw-semibold" role="progressbar"
+                             style="{{ calorie_tracker.progress_style }}"
+                             aria-valuenow="{{ calorie_tracker.percentage }}" aria-valuemin="0" aria-valuemax="100">{{ calorie_tracker.percentage }}%</div>
+                        {% elif calorie_tracker.status == "warning" %}
+                        <div class="progress-bar bg-warning rounded-pill fw-semibold" role="progressbar"
+                             style="{{ calorie_tracker.progress_style }}"
+                             aria-valuenow="{{ calorie_tracker.percentage }}" aria-valuemin="0" aria-valuemax="100">{{ calorie_tracker.percentage }}%</div>
                         {% else %}
-                        <div class="progress-bar bg-success" role="progressbar" data-width="{{ calorie_tracker.percentage }}">
-                            {{ calorie_tracker.percentage }}%
-                        </div>
+                        <div class="progress-bar bg-success rounded-pill fw-semibold" role="progressbar"
+                             style="{{ calorie_tracker.progress_style }}"
+                             aria-valuenow="{{ calorie_tracker.percentage }}" aria-valuemin="0" aria-valuemax="100">{{ calorie_tracker.percentage }}%</div>
                         {% endif %}
                     </div>
-                    <style>
-                        .progress-bar[data-width] {
-                            width: attr(data-width, percentage);
-                        }
-                    </style>
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>Progress to target: {{ calorie_tracker.pct_label }}%</span>
+                    </div>
                     {% if calorie_tracker.status == "warning" %}
-                    <div class="mt-2 text-warning small">⚠️ You're approaching your daily calorie limit!</div>
+                    <div class="mt-2 text-warning-emphasis small">You are nearing your daily calorie ceiling.</div>
+                    {% endif %}
+                    {% if calorie_tracker.over_goal %}
+                    <div class="mt-2 text-danger-emphasis small">You have surpassed today's calorie allotment—fine occasionally, aim to tune portions tomorrow.</div>
+                    {% endif %}
+                    {% if not calorie_tracker.over_goal and calorie_tracker.status != "warning" %}
+                    <p class="text-muted small mb-0 mt-2">Meals logged for today increment this gauge automatically.</p>
                     {% endif %}
                 </div>
             </div>
@@ -96,7 +126,7 @@
                 Health tables are not ready yet. Run <code>python manage.py makemigrations</code> and <code>python manage.py migrate</code>.
             </div>
         {% else %}
-            <section class="mt-4">
+            <section class="mt-2">
                 <div class="row g-3">
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Foods</div><div class="h4 mb-0">{{ stats.foods }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Goals</div><div class="h4 mb-0">{{ stats.goals }}</div></div></div></div>
@@ -112,7 +142,7 @@
                         <div class="card-header fw-semibold">Food Library</div>
                         <ul class="list-group list-group-flush">
                             {% for food in latest_foods %}
-                                <li class="list-group-item d-flex justify-content-between"><span>{{ food.name }}</span><span class="text-muted">{{ food.calories_per_100g }} cal/100g</span></li>
+                                <li class="list-group-item d-flex justify-content-between"><span>{{ food.name }}</span><span class="text-muted">{{ food.calories_per_100g|floatformat:0 }} cal/100g</span></li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No foods yet.</li>
                             {% endfor %}
@@ -148,7 +178,7 @@
                         <div class="card-header fw-semibold">Latest Meal Items</div>
                         <ul class="list-group list-group-flush">
                             {% for item in latest_meal_items %}
-                                <li class="list-group-item">{{ item.food.name }} in {{ item.meal.name }} - {{ item.quantity_grams }}g</li>
+                                <li class="list-group-item">{{ item.food.name }} in {{ item.meal.name }} — {{ item.quantity_grams|floatformat:0 }} g</li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No meal items yet.</li>
                             {% endfor %}
@@ -169,6 +199,86 @@
                 </div>
             </section>
         {% endif %}
+
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm side-card mb-3">
+                    <div class="card-header fw-semibold">Maintenance calories (TDEE)</div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">Quick Mifflin–St Jeor estimate. Defaults come from your profile—adjust if you like.</p>
+                        <form method="post" class="vstack gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="maintenance">
+                            <div>
+                                <label class="form-label small mb-0" for="calc_weight_lb">Weight (lb)</label>
+                                <input class="form-control form-control-sm" id="calc_weight_lb" name="calc_weight_lb" type="number" step="0.1" min="0"
+                                       value="{{ request.user.weight|default_if_none:'' }}">
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0" for="calc_height_ft">Height (decimal ft)</label>
+                                <input class="form-control form-control-sm" id="calc_height_ft" name="calc_height_ft" type="number" step="0.01" min="0"
+                                       value="{{ request.user.height|default_if_none:'' }}">
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0" for="calc_age">Age</label>
+                                <input class="form-control form-control-sm" id="calc_age" name="calc_age" type="number" min="13" max="120"
+                                       value="{{ request.user.age|default_if_none:'' }}">
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0" for="calc_sex">Sex (for formula)</label>
+                                <select class="form-select form-select-sm" id="calc_sex" name="calc_sex">
+                                    <option value="" {% if not request.user.sex %}selected{% endif %}>Prefer not to say / blend formulas</option>
+                                    <option value="M" {% if request.user.sex == 'M' %}selected{% endif %}>Male</option>
+                                    <option value="F" {% if request.user.sex == 'F' %}selected{% endif %}>Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-0" for="calc_activity">Activity</label>
+                                <select class="form-select form-select-sm" id="calc_activity" name="calc_activity">
+                                    <option value="sedentary">Sedentary</option>
+                                    <option value="light">Light exercise</option>
+                                    <option value="moderate" selected>Moderate exercise</option>
+                                    <option value="active">Active</option>
+                                    <option value="extra">Highly active</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm mt-1">Calculate</button>
+                        </form>
+                        {% if maintenance_result %}
+                            <hr>
+                            <p class="mb-2 small fw-semibold text-success">Rough maintenance ({{ maintenance_result.activity_level }} activity tier)</p>
+                            <ul class="list-unstyled small mb-2">
+                                <li>BMR: ~{{ maintenance_result.bmr }} cal/day</li>
+                                <li>TDEE: ~{{ maintenance_result.tdee }} cal/day</li>
+                                <li>BMI label: {{ maintenance_result.bmi_label }}</li>
+                            </ul>
+                            <small class="text-muted">Coach notes are heuristic estimates—not medical prescriptions.</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card shadow-sm coach-card mb-0">
+                    <div class="card-header fw-semibold">Personalized cues</div>
+                    <div class="card-body small">
+                        {% if coach_bmi %}
+                        <div class="d-flex justify-content-between align-items-baseline mb-2 gap-2">
+                            <span class="text-muted">BMI snapshot</span>
+                            <strong>{{ coach_bmi|floatformat:1 }}</strong>
+                        </div>
+                        {% endif %}
+                        {% if coach_tdee_estimate %}
+                        <p class="text-muted mb-2">Rough TDEE (~moderate training): {{ coach_tdee_estimate }} cal/day.</p>
+                        {% endif %}
+                        {% for hint in coach_tips %}
+                            <p class="mb-2">{{ hint }}</p>
+                        {% empty %}
+                            <p class="text-muted mb-0">We will share tips once BMI inputs are entered.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 </body>
 </html>

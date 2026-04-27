@@ -11,10 +11,15 @@ class AccountSignUpForm(UserCreationForm):
         for name in ("password1", "password2"):
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault("class", "form-control")
+        if "sex" in self.fields:
+            self.fields["sex"].required = False
+            self.fields["sex"].choices = [
+                ("", "(optional improves calorie estimates)"),
+            ] + list(get_user_model().SEX_CHOICES)
 
     class Meta(UserCreationForm.Meta):
         model = get_user_model()
-        fields = ["email", "name", "age", "height", "weight"]
+        fields = ["email", "name", "age", "height", "weight", "sex"]
         widgets = {
             "email": forms.EmailInput(
                 attrs={"class": "form-control", "placeholder": "Enter email address"}
@@ -41,6 +46,7 @@ class AccountSignUpForm(UserCreationForm):
                     "min": 0,
                 }
             ),
+            "sex": forms.Select(attrs={"class": "form-select"}),
         }
 
 
@@ -49,10 +55,15 @@ class RecentUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if account is not None:
             self.instance.account = account
+        if "sex" in self.fields:
+            self.fields["sex"].required = False
+            self.fields["sex"].choices = [
+                ("", "(optional)"),
+            ] + list(User.SEX_CHOICES)
 
     class Meta:
         model = User
-        fields = ["name", "email", "age", "height", "weight"]
+        fields = ["name", "email", "age", "height", "weight", "sex"]
         widgets = {
             "name": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "Enter full name"}
@@ -79,6 +90,7 @@ class RecentUserForm(forms.ModelForm):
                     "min": 0,
                 }
             ),
+            "sex": forms.Select(attrs={"class": "form-select"}),
         }
 
     def save(self, commit=True):
@@ -98,7 +110,7 @@ class GoalForm(forms.ModelForm):
         model = Goal
         fields = ["goal_type", "target_weight", "daily_calories", "protein", "carbs", "fat", "start_date"]
         widgets = {
-            "goal_type": forms.Select(attrs={"class": "form-select", "onchange": "updateSuggestions()"}),
+            "goal_type": forms.Select(attrs={"class": "form-select"}),
             "target_weight": forms.NumberInput(
                 attrs={"class": "form-control", "placeholder": "Target weight in lbs", "step": "0.01", "min": 0}
             ),
