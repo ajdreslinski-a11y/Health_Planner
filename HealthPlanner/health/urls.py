@@ -7,8 +7,13 @@ app_name = "health"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("onboarding/goal/", views.onboarding_goal, name="onboarding_goal"),
+    path("foods/new/", views.create_food, name="create_food"),
     path("users/new/", views.create_recent_user, name="create_recent_user"),
     path("users/<int:user_id>/edit/", views.edit_recent_user, name="edit_recent_user"),
+    path("goals/new/", views.create_goal, name="create_goal"),
+    path("meals/new/", views.create_meal, name="create_meal"),
+    path("meals/<int:meal_id>/items/", views.edit_meal_items, name="edit_meal_items"),
     path(
         "login/",
         auth_views.LoginView.as_view(

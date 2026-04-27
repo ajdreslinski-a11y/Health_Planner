@@ -96,9 +96,31 @@
                     <form method="post" action="{% url 'health:register' %}">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="id_username" class="form-label">Username</label>
-                            <input type="text" name="username" id="id_username" class="form-control {% if form.username.errors %}is-invalid{% endif %}" placeholder="Create a username" required>
-                            {% if form.username.errors %}<div class="invalid-feedback">{{ form.username.errors.0 }}</div>{% endif %}
+                            <label for="id_email" class="form-label">Email</label>
+                            <input type="email" name="email" id="id_email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" placeholder="Enter your email" required>
+                            {% if form.email.errors %}<div class="invalid-feedback">{{ form.email.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Name</label>
+                            <input type="text" name="name" id="id_name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" placeholder="Your name" required>
+                            {% if form.name.errors %}<div class="invalid-feedback">{{ form.name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="id_age" class="form-label">Age</label>
+                                <input type="number" name="age" id="id_age" class="form-control {% if form.age.errors %}is-invalid{% endif %}" placeholder="Age" min="0" required>
+                                {% if form.age.errors %}<div class="invalid-feedback">{{ form.age.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_height" class="form-label">Height (ft)</label>
+                                <input type="number" name="height" id="id_height" class="form-control {% if form.height.errors %}is-invalid{% endif %}" placeholder="e.g. 5.8" step="0.01" min="0" required>
+                                {% if form.height.errors %}<div class="invalid-feedback">{{ form.height.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_weight" class="form-label">Weight (lbs)</label>
+                                <input type="number" name="weight" id="id_weight" class="form-control {% if form.weight.errors %}is-invalid{% endif %}" placeholder="e.g. 165" step="0.01" min="0" required>
+                                {% if form.weight.errors %}<div class="invalid-feedback">{{ form.weight.errors.0 }}</div>{% endif %}
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="id_password1" class="form-label">Password</label>

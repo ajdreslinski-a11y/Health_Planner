@@ -24,7 +24,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark topbar py-2">
         <div class="container">
             <span class="navbar-brand fw-semibold">Health Planner</span>
-            <span class="text-white-50 small ms-3">Welcome back, {{ request.user.name|default:request.user.email|default:request.user.username }}</span>
+            <span class="text-white-50 small ms-3">Welcome back, {{ request.user.name|default:request.user.email }}</span>
             <div class="ms-auto">
                 <form method="post" action="{% url 'health:logout' %}">{% csrf_token %}<button type="submit" class="btn btn-outline-light btn-sm">Log out</button></form>
             </div>
@@ -32,8 +32,19 @@
     </nav>
     <main class="container py-5">
         <div class="p-4 bg-white border rounded shadow-sm">
-            <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.name|default:request.user.email|default:request.user.username }}!</h1>
+            <h1 class="h2 mb-2">Welcome to your dashboard, {{ request.user.name|default:request.user.email }}!</h1>
             <p class="text-muted mb-0">Your Health Planner account is ready. Start tracking your goals and routines.</p>
+        </div>
+
+        <div class="mt-4">
+            <div class="row g-2">
+                <div class="col-auto">
+                    <a href="{% url 'health:create_goal' %}" class="btn btn-success">+ New Goal</a>
+                </div>
+                <div class="col-auto">
+                    <a href="{% url 'health:create_meal' %}" class="btn btn-outline-success">+ Log Meal</a>
+                </div>
+            </div>
         </div>
 
         {% if messages %}
@@ -44,6 +55,42 @@
             </div>
         {% endif %}
 
+        {% if calorie_tracker.goal %}
+        <div class="mt-4">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Calorie Tracker</span>
+                    <span class="badge bg-secondary">{{ calorie_tracker.remaining }} cal remaining</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2 d-flex justify-content-between">
+                        <span>Consumed: {{ calorie_tracker.consumed }} cal</span>
+                        <span>Goal: {{ calorie_tracker.goal }} cal</span>
+                    </div>
+                    <div class="progress" style="height: 24px">
+                        {% if calorie_tracker.status == "warning" %}
+                        <div class="progress-bar bg-warning" role="progressbar" data-width="{{ calorie_tracker.percentage }}">
+                            {{ calorie_tracker.percentage }}%
+                        </div>
+                        {% else %}
+                        <div class="progress-bar bg-success" role="progressbar" data-width="{{ calorie_tracker.percentage }}">
+                            {{ calorie_tracker.percentage }}%
+                        </div>
+                        {% endif %}
+                    </div>
+                    <style>
+                        .progress-bar[data-width] {
+                            width: attr(data-width, percentage);
+                        }
+                    </style>
+                    {% if calorie_tracker.status == "warning" %}
+                    <div class="mt-2 text-warning small">⚠️ You're approaching your daily calorie limit!</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         {% if not db_ready %}
             <div class="alert alert-warning mt-4 mb-0">
                 Health tables are not ready yet. Run <code>python manage.py makemigrations</code> and <code>python manage.py migrate</code>.
@@ -51,7 +98,6 @@
         {% else %}
             <section class="mt-4">
                 <div class="row g-3">
-                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Users</div><div class="h4 mb-0">{{ stats.users }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Foods</div><div class="h4 mb-0">{{ stats.foods }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Goals</div><div class="h4 mb-0">{{ stats.goals }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Meals</div><div class="h4 mb-0">{{ stats.meals }}</div></div></div></div>
@@ -63,21 +109,18 @@
             <section class="row g-4 mt-1">
                 <div class="col-lg-6">
                     <div class="card shadow-sm">
-                        <div class="card-header fw-semibold">Recent Users</div>
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Recent Users</span>
+                            <a class="btn btn-outline-success btn-sm" href="{% url 'health:create_recent_user' %}">Add a recent user</a>
+                        </div>
                         <ul class="list-group list-group-flush">
-                            <li class="list-group-item p-0">
-                                <a href="{% url 'health:create_recent_user' %}" class="d-flex justify-content-between align-items-center px-3 py-3 text-decoration-none">
-                                    <span class="fw-medium text-success">Add a recent user</span>
-                                    <span class="text-muted small">Open form</span>
-                                </a>
-                            </li>
-                            {% for u in latest_users %}
+                            {% for u in latest_recent_users %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <a href="{% url 'health:edit_recent_user' u.user_id %}" class="text-decoration-none">{{ u.name }}</a>
-                                    <span class="text-muted">{{ u.created_at|date:"M d, Y" }}</span>
+                                    <span>{{ u.name }}</span>
+                                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'health:edit_recent_user' u.user_id %}">Edit</a>
                                 </li>
                             {% empty %}
-                                <li class="list-group-item text-muted">No users yet for this account.</li>
+                                <li class="list-group-item text-muted">No recent users yet.</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -99,7 +142,7 @@
                         <div class="card-header fw-semibold">Health Goals</div>
                         <ul class="list-group list-group-flush">
                             {% for goal in latest_goals %}
-                                <li class="list-group-item">{{ goal.user.name }} - {{ goal.get_goal_type_display }} ({{ goal.daily_calories }} cal/day)</li>
+                                <li class="list-group-item">{{ goal.get_goal_type_display }} ({{ goal.daily_calories }} cal/day)</li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No goals yet.</li>
                             {% endfor %}
@@ -111,7 +154,7 @@
                         <div class="card-header fw-semibold">Latest Meals</div>
                         <ul class="list-group list-group-flush">
                             {% for meal in latest_meals %}
-                                <li class="list-group-item">{{ meal.user.name }} - {{ meal.name }} ({{ meal.get_meal_type_display }})</li>
+                                <li class="list-group-item">{{ meal.name }} ({{ meal.get_meal_type_display }})</li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No meals yet.</li>
                             {% endfor %}
@@ -135,7 +178,7 @@
                         <div class="card-header fw-semibold">Recent Progress Entries</div>
                         <ul class="list-group list-group-flush">
                             {% for p in latest_progress %}
-                                <li class="list-group-item">{{ p.user.name }} - {{ p.date }} ({{ p.daily_calories_consumed }} cal)</li>
+                                <li class="list-group-item">{{ p.date }} ({{ p.daily_calories_consumed }} cal)</li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No progress entries yet.</li>
                             {% endfor %}

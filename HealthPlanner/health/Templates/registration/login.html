@@ -102,8 +102,8 @@
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next|default:'/' }}">
                         <div class="mb-3">
-                            <label for="id_username" class="form-label">Username</label>
-                            <input id="id_username" name="username" type="text" class="form-control" placeholder="Enter your username" required autofocus>
+                            <label for="id_username" class="form-label">Email</label>
+                            <input id="id_username" name="username" type="email" class="form-control" placeholder="Enter your email" required autofocus>
                         </div>
                         <div class="mb-3">
                             <label for="id_password" class="form-label">Password</label>

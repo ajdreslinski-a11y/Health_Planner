@@ -8,17 +8,23 @@ from .models import User as HealthUser
 class RecentUserFlowTests(TestCase):
     def setUp(self):
         self.account = get_user_model().objects.create_user(
-            username="owner",
             email="owner@example.com",
+            name="Owner",
+            age=30,
+            height="5.10",
+            weight="170.00",
             password="testpass123",
         )
         self.other_account = get_user_model().objects.create_user(
-            username="second-owner",
             email="second-owner@example.com",
+            name="Second Owner",
+            age=30,
+            height="5.10",
+            weight="170.00",
             password="testpass123",
         )
         self.assertTrue(
-            self.client.login(username="owner", password="testpass123")
+            self.client.login(username="owner@example.com", password="testpass123")
         )
         self.recent_user = HealthUser.objects.create(
             name="Jordan Lee",
@@ -31,7 +37,7 @@ class RecentUserFlowTests(TestCase):
         )
         self.other_recent_user = HealthUser.objects.create(
             name="Morgan Tate",
-            email="shared@example.com",
+            email="morgan@example.com",
             age=29,
             height="5.07",
             weight="145.00",
@@ -61,7 +67,7 @@ class RecentUserFlowTests(TestCase):
             reverse("health:create_recent_user"),
             {
                 "name": "Taylor Brooks",
-                "email": "shared@example.com",
+                "email": "taylor@example.com",
                 "age": 28,
                 "height": "5.09",
                 "weight": "154.50",
@@ -73,13 +79,13 @@ class RecentUserFlowTests(TestCase):
         self.assertContains(response, "Taylor Brooks")
         self.assertTrue(
             HealthUser.objects.filter(
-                email="shared@example.com",
+                email="taylor@example.com",
                 account=self.account,
             ).exists()
         )
         self.assertFalse(
             HealthUser.objects.get(
-                email="shared@example.com",
+                email="taylor@example.com",
                 account=self.account,
             ).has_usable_password()
         )

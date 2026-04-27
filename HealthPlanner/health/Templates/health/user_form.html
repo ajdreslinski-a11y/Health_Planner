@@ -19,6 +19,16 @@
             max-width: 720px;
             margin: 0 auto;
         }
+
+        .suggestion-card {
+            background: #f8f9fa;
+            border-left: 4px solid #1f8a57;
+        }
+
+        .suggestion-btn {
+            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-light min-vh-100">
@@ -57,6 +67,40 @@
                         </div>
                     {% endfor %}
                 </div>
+
+                {% if goal_suggestions %}
+                <div class="mt-4">
+                    <h6 class="fw-semibold mb-3">Goal Suggestions</h6>
+                    <p class="text-muted small mb-3">
+                        {% if user_weight %}
+                        Based on your current weight of {{ user_weight }} lbs:
+                        {% else %}
+                        Set your weight in your profile to get personalized suggestions.
+                        {% endif %}
+                        Select a goal type above, then click a suggestion below to auto-fill the values:
+                    </p>
+                    <div class="row g-2">
+                        {% for type, values in goal_suggestions.items %}
+                        <div class="col-6 col-md-3">
+                            <div class="card suggestion-card">
+                                <div class="card-body p-3">
+                                    <div class="fw-semibold text-capitalize mb-2">{{ type }}</div>
+                                    <div class="small text-muted">
+                                        <div>{{ values.daily_calories }} cal</div>
+                                        <div>{{ values.protein }}g protein</div>
+                                        <div>{{ values.carbs }}g carbs</div>
+                                        <div>{{ values.fat }}g fat</div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-success btn-sm suggestion-btn mt-2" 
+                                        onclick="applySuggestion('{{ type }}')">Use this</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="d-flex gap-2 mt-4">
                     <button type="submit" class="btn btn-success">{{ submit_label|default:"Save user" }}</button>
                     <a href="{% url 'health:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
@@ -64,5 +108,21 @@
             </form>
         </div>
     </main>
+
+    {% if goal_suggestions %}
+    <script>
+        const suggestions = {{ goal_suggestions|safe }};
+
+        function applySuggestion(goalType) {
+            const values = suggestions[goalType];
+            if (values) {
+                document.getElementById('id_daily_calories').value = values.daily_calories;
+                document.getElementById('id_protein').value = values.protein;
+                document.getElementById('id_carbs').value = values.carbs;
+                document.getElementById('id_fat').value = values.fat;
+            }
+        }
+    </script>
+    {% endif %}
 </body>
 </html>

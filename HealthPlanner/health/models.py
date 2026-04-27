@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class UserManager(BaseUserManager):
@@ -15,13 +16,22 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
+    ONBOARDING_GOAL_CHOICES = [
+        ("lose_weight", "Lose weight"),
+        ("gain_muscle", "Gain muscle"),
+        ("maintain_weight", "Maintain weight"),
+    ]
+
     user_id = models.AutoField(primary_key=True)
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     name = models.CharField(max_length=100)
     age = models.PositiveIntegerField()
     height = models.DecimalField(max_digits=5, decimal_places=2, help_text="Height in ft")
     weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight in lbs")
+    onboarding_goal = models.CharField(
+        max_length=20, choices=ONBOARDING_GOAL_CHOICES, blank=True, null=True
+    )
     account = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -72,15 +82,20 @@ class Food(models.Model):
     def get_macros(self, grams):
         """Calculate macros for a given amount of grams (based on 100g standard)"""
         """Use this method to get macros for any amount of food based on the per 100g values"""
-        factor = grams / 100
+        grams = Decimal(str(grams))
+        factor = grams / Decimal("100")
+
+        def q(value: Decimal) -> Decimal:
+            return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
         return {
-            'grams': grams,
-            'calories': round(self.calories_per_100g * factor, 2),
-            'protein': round(self.protein_per_100g * factor, 2),
-            'carbs': round(self.carbs_per_100g * factor, 2),
-            'fat': round(self.fat_per_100g * factor, 2),
-            'fiber': round(self.fiber_per_100g * factor, 2),
-            'sugar': round(self.sugar_per_100g * factor, 2),
+            "grams": grams,
+            "calories": q(self.calories_per_100g * factor),
+            "protein": q(self.protein_per_100g * factor),
+            "carbs": q(self.carbs_per_100g * factor),
+            "fat": q(self.fat_per_100g * factor),
+            "fiber": q(self.fiber_per_100g * factor),
+            "sugar": q(self.sugar_per_100g * factor),
         }
 
     def display_macros(self, grams=None):
@@ -177,7 +192,7 @@ class MealItem(models.Model):
     def save(self, *args, **kwargs):
         """Calculate nutritional values based on food and quantity"""
         if self.food and self.quantity_grams:
-            macros = self.food.get_macros(float(self.quantity_grams))
+            macros = self.food.get_macros(self.quantity_grams)
             self.calories = macros['calories']
             self.protein = macros['protein']
             self.carbs = macros['carbs']
