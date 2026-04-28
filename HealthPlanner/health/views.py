@@ -4,9 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.db.utils import OperationalError, ProgrammingError
 from django.shortcuts import get_object_or_404, redirect, render
-from datetime import date
+from django.utils import timezone
 
-from .forms import AccountSignUpForm, FoodForm, MealItemForm, RecentUserForm
+from .forms import AccountSignUpForm, FoodForm, MealForm, MealItemForm, RecentUserForm
 from .models import Food, Goal, Meal, MealItem, Progress, User
 from .nutrition import build_goal_suggestions, compute_maintenance, dashboard_copy
 
@@ -139,7 +139,7 @@ def dashboard(request):
         context["coach_tdee_estimate"] = coach_tdee
         
         # Calorie Tracker: Goal setting + Food logging + Daily remaining
-        today = date.today()
+        today = timezone.localdate()
         
         # Get the most recent active goal for the user
         active_goal = Goal.objects.filter(
@@ -301,8 +301,6 @@ def create_goal(request):
 
 @login_required
 def create_meal(request):
-    from .forms import MealForm
-    
     if request.method == "POST":
         form = MealForm(request.POST)
         if form.is_valid():
@@ -325,6 +323,94 @@ def create_meal(request):
             "submit_label": "Log Meal",
         },
     )
+
+
+@login_required
+def edit_meal(request, meal_id: int):
+    meal = get_object_or_404(Meal, pk=meal_id, user=request.user)
+
+    if request.method == "POST":
+        form = MealForm(request.POST, instance=meal)
+        if form.is_valid():
+            updated_meal = form.save()
+            messages.success(request, f"Meal '{updated_meal.name}' was updated.")
+            return redirect("health:dashboard")
+    else:
+        form = MealForm(instance=meal)
+
+    return render(
+        request,
+        "health/user_form.html",
+        {
+            "form": form,
+            "form_title": f"Edit Meal: {meal.name}",
+            "form_description": "Update meal details, then save to refresh your dashboard list.",
+            "submit_label": "Save meal",
+        },
+    )
+
+
+@login_required
+def delete_meal(request, meal_id: int):
+    meal = get_object_or_404(Meal, pk=meal_id, user=request.user)
+
+    if request.method != "POST":
+        return redirect("health:dashboard")
+
+    meal_name = meal.name
+    meal.delete()
+    messages.success(request, f"Meal '{meal_name}' was deleted.")
+    return redirect("health:dashboard")
+
+
+@login_required
+def edit_meal_item(request, meal_item_id: int):
+    meal_item = get_object_or_404(
+        MealItem.objects.select_related("meal", "food"),
+        pk=meal_item_id,
+        meal__user=request.user,
+    )
+
+    if request.method == "POST":
+        form = MealItemForm(request.POST, instance=meal_item)
+        if form.is_valid():
+            updated_item = form.save()
+            _recalc_meal_totals(updated_item.meal)
+            messages.success(request, "Meal item was updated.")
+            return redirect("health:dashboard")
+    else:
+        form = MealItemForm(instance=meal_item)
+
+    return render(
+        request,
+        "health/user_form.html",
+        {
+            "form": form,
+            "form_title": f"Edit Meal Item: {meal_item.food.name}",
+            "form_description": (
+                f"Update this item in {meal_item.meal.name}, then save to refresh your dashboard list."
+            ),
+            "submit_label": "Save meal item",
+        },
+    )
+
+
+@login_required
+def delete_meal_item(request, meal_item_id: int):
+    meal_item = get_object_or_404(
+        MealItem.objects.select_related("meal", "food"),
+        pk=meal_item_id,
+        meal__user=request.user,
+    )
+
+    if request.method != "POST":
+        return redirect("health:dashboard")
+
+    meal = meal_item.meal
+    meal_item.delete()
+    _recalc_meal_totals(meal)
+    messages.success(request, "Meal item was deleted.")
+    return redirect("health:dashboard")
 
 
 def _recalc_meal_totals(meal: Meal) -> None:
