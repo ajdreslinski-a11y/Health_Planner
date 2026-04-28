@@ -51,6 +51,9 @@
                 <div class="col-auto">
                     <a href="{% url 'health:create_meal' %}" class="btn btn-outline-success">+ Log Meal</a>
                 </div>
+                <div class="col-auto">
+                    <a href="{% url 'health:create_progress' %}" class="btn btn-outline-secondary">+ Log Progress</a>
+                </div>
             </div>
         </div>
 
@@ -203,10 +206,36 @@
                 </div>
                 <div class="col-lg-6">
                     <div class="card shadow-sm">
-                        <div class="card-header fw-semibold">Recent Progress Entries</div>
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center gap-2">
+                            <span>Recent Progress Entries</span>
+                            <a class="btn btn-outline-success btn-sm" href="{% url 'health:create_progress' %}">Log entry</a>
+                        </div>
                         <ul class="list-group list-group-flush">
-                            {% for p in latest_progress %}
-                                <li class="list-group-item">{{ p.date }} ({{ p.daily_calories_consumed }} cal)</li>
+                            {% for row in latest_progress_rows %}
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <a class="fw-semibold text-decoration-none" href="{% url 'health:edit_progress' row.entry.progress_id %}">
+                                            {{ row.entry.date }}
+                                        </a>
+                                        {% if row.goal_units %}
+                                            {% if row.delta_units > 0 %}
+                                                <span class="badge bg-danger-subtle text-danger-emphasis">{{ row.abs_delta_units }} cal over</span>
+                                            {% elif row.delta_units < 0 %}
+                                                <span class="badge bg-success-subtle text-success-emphasis">{{ row.abs_delta_units }} cal under</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary-emphasis">On target</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis">No goal</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        {{ row.calories }} cal{% if row.goal_units %} of {{ row.goal_units }} ({{ row.pct_of_goal }}%){% endif %}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Protein {{ row.protein }}g · Carbs {{ row.carbs }}g · Fat {{ row.fat }}g
+                                    </div>
+                                </li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No progress entries yet.</li>
                             {% endfor %}

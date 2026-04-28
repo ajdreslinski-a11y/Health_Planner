@@ -6,7 +6,14 @@ from django.db.utils import OperationalError, ProgrammingError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .forms import AccountSignUpForm, FoodForm, MealForm, MealItemForm, RecentUserForm
+from .forms import (
+    AccountSignUpForm,
+    FoodForm,
+    MealForm,
+    MealItemForm,
+    ProgressForm,
+    RecentUserForm,
+)
 from .models import Food, Goal, Meal, MealItem, Progress, User
 from .nutrition import build_goal_suggestions, compute_maintenance, dashboard_copy
 
@@ -92,6 +99,7 @@ def dashboard(request):
         "latest_meals": [],
         "latest_meal_items": [],
         "latest_progress": [],
+        "latest_progress_rows": [],
         "latest_recent_users": [],
         "calorie_tracker": {},
         "maintenance_result": maintenance_snapshot,
@@ -118,9 +126,84 @@ def dashboard(request):
         context["latest_meal_items"] = MealItem.objects.select_related(
             "meal", "food"
         ).filter(meal__user=request.user).order_by("-meal_item_id")[:6]
-        context["latest_progress"] = Progress.objects.filter(
-            user=request.user
-        ).order_by("-date")[:5]
+        latest_progress = list(
+            Progress.objects.filter(
+                user=request.user
+            ).order_by("-date")[:5]
+        )
+        context["latest_progress"] = latest_progress
+        context["latest_progress_rows"] = []
+        for entry in latest_progress:
+            meal_totals = Meal.objects.filter(
+                user=request.user, date=entry.date
+            ).aggregate(
+                calories=Sum("total_calories"),
+                protein=Sum("total_protein"),
+                carbs=Sum("total_carbs"),
+                fat=Sum("total_fat"),
+            )
+            goal_for_day = Goal.objects.filter(
+                user=request.user, start_date__lte=entry.date
+            ).order_by("-start_date").first()
+
+            calories_val = int(
+                round(
+                    float(
+                        entry.daily_calories_consumed
+                        or meal_totals["calories"]
+                        or 0
+                    )
+                )
+            )
+            protein_val = int(
+                round(
+                    float(
+                        entry.daily_protein_consumed
+                        or meal_totals["protein"]
+                        or 0
+                    )
+                )
+            )
+            carbs_val = int(
+                round(
+                    float(
+                        entry.daily_carbs_consumed
+                        or meal_totals["carbs"]
+                        or 0
+                    )
+                )
+            )
+            fat_val = int(
+                round(
+                    float(
+                        entry.daily_fat_consumed
+                        or meal_totals["fat"]
+                        or 0
+                    )
+                )
+            )
+
+            goal_units = goal_for_day.daily_calories if goal_for_day else None
+            delta_units = calories_val - goal_units if goal_units else None
+            pct_of_goal = (
+                int(round((calories_val / float(goal_units)) * 100))
+                if goal_units and goal_units > 0
+                else None
+            )
+
+            context["latest_progress_rows"].append(
+                {
+                    "entry": entry,
+                    "calories": calories_val,
+                    "protein": protein_val,
+                    "carbs": carbs_val,
+                    "fat": fat_val,
+                    "goal_units": goal_units,
+                    "delta_units": delta_units,
+                    "abs_delta_units": abs(delta_units) if delta_units is not None else None,
+                    "pct_of_goal": pct_of_goal,
+                }
+            )
 
         context["latest_recent_users"] = User.objects.filter(
             account=request.user
@@ -295,6 +378,58 @@ def create_goal(request):
             "goal_suggestions": trimmed,
             "goal_intro_blurbs": intro_blurbs,
             "user_weight": u.weight,
+        },
+    )
+
+
+@login_required
+def create_progress(request):
+    if request.method == "POST":
+        form = ProgressForm(request.POST)
+        if form.is_valid():
+            progress = form.save(commit=False)
+            progress.user = request.user
+            progress.save()
+            messages.success(request, "Progress entry logged.")
+            return redirect("health:dashboard")
+    else:
+        form = ProgressForm(initial={"date": timezone.localdate()})
+
+    return render(
+        request,
+        "health/user_form.html",
+        {
+            "form": form,
+            "form_title": "Log Daily Progress",
+            "form_description": (
+                "Track weight, optional body-fat percentage, and your daily macro totals."
+            ),
+            "submit_label": "Save progress",
+        },
+    )
+
+
+@login_required
+def edit_progress(request, progress_id: int):
+    progress_entry = get_object_or_404(Progress, pk=progress_id, user=request.user)
+
+    if request.method == "POST":
+        form = ProgressForm(request.POST, instance=progress_entry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Progress entry updated.")
+            return redirect("health:dashboard")
+    else:
+        form = ProgressForm(instance=progress_entry)
+
+    return render(
+        request,
+        "health/user_form.html",
+        {
+            "form": form,
+            "form_title": f"Edit Progress: {progress_entry.date}",
+            "form_description": "Update this daily progress record, then save.",
+            "submit_label": "Save changes",
         },
     )
 
