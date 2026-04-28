@@ -166,7 +166,15 @@
                         <div class="card-header fw-semibold">Latest Meals</div>
                         <ul class="list-group list-group-flush">
                             {% for meal in latest_meals %}
-                                <li class="list-group-item">{{ meal.name }} ({{ meal.get_meal_type_display }})</li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                    <a class="text-decoration-none" href="{% url 'health:edit_meal' meal.meal_id %}">
+                                        {{ meal.name }} ({{ meal.get_meal_type_display }})
+                                    </a>
+                                    <form method="post" action="{% url 'health:delete_meal' meal.meal_id %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    </form>
+                                </li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No meals yet.</li>
                             {% endfor %}
@@ -178,7 +186,15 @@
                         <div class="card-header fw-semibold">Latest Meal Items</div>
                         <ul class="list-group list-group-flush">
                             {% for item in latest_meal_items %}
-                                <li class="list-group-item">{{ item.food.name }} in {{ item.meal.name }} — {{ item.quantity_grams|floatformat:0 }} g</li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                    <a class="text-decoration-none" href="{% url 'health:edit_meal_item' item.meal_item_id %}">
+                                        {{ item.food.name }} in {{ item.meal.name }} — {{ item.quantity_grams|floatformat:0 }} g
+                                    </a>
+                                    <form method="post" action="{% url 'health:delete_meal_item' item.meal_item_id %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    </form>
+                                </li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No meal items yet.</li>
                             {% endfor %}
