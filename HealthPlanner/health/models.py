@@ -173,6 +173,8 @@ class Meal(models.Model):
     total_protein = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     total_carbs = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     total_fat = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    total_fiber = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    total_sugar = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     
     notes = models.TextField(blank=True, null=True, help_text="Additional notes")
 
@@ -196,6 +198,8 @@ class MealItem(models.Model):
     protein = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     carbs = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     fat = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    fiber = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    sugar = models.DecimalField(max_digits=7, decimal_places=2, default=0)
 
     class Meta:
         db_table = 'meal_items'
@@ -208,6 +212,8 @@ class MealItem(models.Model):
             self.protein = macros['protein']
             self.carbs = macros['carbs']
             self.fat = macros['fat']
+            self.fiber = macros['fiber']
+            self.sugar = macros['sugar']
         super().save(*args, **kwargs)
 
     def __str__(self):

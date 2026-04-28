@@ -184,14 +184,14 @@
                 </div>
                 <div id="food-list" style="max-height: 300px; overflow-y: auto;">
                     {% for food in foods_payload %}
-                    <div class="food-item" data-id="{{ food.id }}" data-name="{{ food.name }}" data-brand="{{ food.brand|default:'' }}" data-calories="{{ food.calories_per_100g }}" data-protein="{{ food.protein_per_100g }}" data-carbs="{{ food.carbs_per_100g }}" data-fat="{{ food.fat_per_100g }}">
+                    <div class="food-item" data-id="{{ food.id }}" data-name="{{ food.name }}" data-brand="{{ food.brand|default:'' }}" data-calories="{{ food.calories_per_100g }}" data-protein="{{ food.protein_per_100g }}" data-carbs="{{ food.carbs_per_100g }}" data-fat="{{ food.fat_per_100g }}" data-fiber="{{ food.fiber_per_100g }}" data-sugar="{{ food.sugar_per_100g }}">
                         <div>
                             <div class="food-name">{{ food.name }}</div>
                             {% if food.brand %}<div class="text-muted small">{{ food.brand }}</div>{% endif %}
                         </div>
                         <div class="text-end">
                             <div class="food-macros">{{ food.calories_per_100g|floatformat:0 }} cal</div>
-                            <div class="food-macros">P: {{ food.protein_per_100g|floatformat:0 }}g · C: {{ food.carbs_per_100g|floatformat:0 }}g · F: {{ food.fat_per_100g|floatformat:0 }}g</div>
+                            <div class="food-macros">P: {{ food.protein_per_100g|floatformat:0 }}g · C: {{ food.carbs_per_100g|floatformat:0 }}g · F: {{ food.fat_per_100g|floatformat:0 }}g · Fi: {{ food.fiber_per_100g|floatformat:0 }}g · Su: {{ food.sugar_per_100g|floatformat:0 }}g</div>
                         </div>
                     </div>
                     {% endfor %}
@@ -396,7 +396,9 @@
                         calories: parseFloat(item.dataset.calories),
                         protein: parseFloat(item.dataset.protein),
                         carbs: parseFloat(item.dataset.carbs),
-                        fat: parseFloat(item.dataset.fat)
+                        fat: parseFloat(item.dataset.fat),
+                        fiber: parseFloat(item.dataset.fiber),
+                        sugar: parseFloat(item.dataset.sugar)
                     };
 
                     // Check which form is being used (Add Food vs Add Meal)
@@ -413,6 +415,8 @@
                         document.getElementById("id_protein_per_100g").value = selectedFood.protein;
                         document.getElementById("id_carbs_per_100g").value = selectedFood.carbs;
                         document.getElementById("id_fat_per_100g").value = selectedFood.fat;
+                        document.getElementById("id_fiber_per_100g").value = selectedFood.fiber;
+                        document.getElementById("id_sugar_per_100g").value = selectedFood.sugar;
                     } else if (isAddMeal) {
                         // Add Meal form - get grams and calculate
                         const grams = parseFloat(gramsInput.value) || 100;
@@ -424,6 +428,8 @@
                         document.getElementById("id_total_protein").value = (selectedFood.protein * factor).toFixed(1);
                         document.getElementById("id_total_carbs").value = (selectedFood.carbs * factor).toFixed(1);
                         document.getElementById("id_total_fat").value = (selectedFood.fat * factor).toFixed(1);
+                        document.getElementById("id_total_fiber").value = (selectedFood.fiber * factor).toFixed(1);
+                        document.getElementById("id_total_sugar").value = (selectedFood.sugar * factor).toFixed(1);
                         
                         // Show grams input
                         if (gramsInputSection) {
@@ -451,6 +457,8 @@
                     document.getElementById("id_total_protein").value = (selectedFood.protein * factor).toFixed(1);
                     document.getElementById("id_total_carbs").value = (selectedFood.carbs * factor).toFixed(1);
                     document.getElementById("id_total_fat").value = (selectedFood.fat * factor).toFixed(1);
+                    document.getElementById("id_total_fiber").value = (selectedFood.fiber * factor).toFixed(1);
+                    document.getElementById("id_total_sugar").value = (selectedFood.sugar * factor).toFixed(1);
                     
                     // Update nutrition label with calculated values
                     updateNutritionLabelFromFields();
@@ -471,6 +479,8 @@
             const fat = selectedFood.fat * factor;
             const carbs = selectedFood.carbs * factor;
             const protein = selectedFood.protein * factor;
+            const fiber = selectedFood.fiber * factor;
+            const sugar = selectedFood.sugar * factor;
 
             // Daily values (based on 2000 calorie diet)
             const dvFat = 78;
@@ -480,6 +490,8 @@
             document.getElementById("preview-calories").textContent = Math.round(calories);
             document.getElementById("preview-fat").textContent = fat.toFixed(1);
             document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+            document.getElementById("preview-fiber").textContent = fiber.toFixed(1);
+            document.getElementById("preview-sugar").textContent = sugar.toFixed(1);
             document.getElementById("preview-protein").textContent = protein.toFixed(1);
             document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
             document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
@@ -495,8 +507,10 @@
             const protein = parseFloat(document.getElementById("id_total_protein").value) || 0;
             const carbs = parseFloat(document.getElementById("id_total_carbs").value) || 0;
             const fat = parseFloat(document.getElementById("id_total_fat").value) || 0;
+            const fiber = parseFloat(document.getElementById("id_total_fiber").value) || 0;
+            const sugar = parseFloat(document.getElementById("id_total_sugar").value) || 0;
 
-            if (calories > 0 || protein > 0 || carbs > 0 || fat > 0) {
+            if (calories > 0 || protein > 0 || carbs > 0 || fat > 0 || fiber > 0 || sugar > 0) {
                 const dvFat = 78;
                 const dvCarbs = 275;
                 const dvProtein = 50;
@@ -504,6 +518,8 @@
                 document.getElementById("preview-calories").textContent = Math.round(calories);
                 document.getElementById("preview-fat").textContent = fat.toFixed(1);
                 document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+                document.getElementById("preview-fiber").textContent = fiber.toFixed(1);
+                document.getElementById("preview-sugar").textContent = sugar.toFixed(1);
                 document.getElementById("preview-protein").textContent = protein.toFixed(1);
                 document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
                 document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
@@ -517,6 +533,8 @@
         const proteinField = document.getElementById("id_protein_per_100g");
         const carbsField = document.getElementById("id_carbs_per_100g");
         const fatField = document.getElementById("id_fat_per_100g");
+        const fiberField = document.getElementById("id_fiber_per_100g");
+        const sugarField = document.getElementById("id_sugar_per_100g");
 
         // Add Food form fields
         if (calorieField && nutritionPreview) {
@@ -525,8 +543,10 @@
                 const protein = parseFloat(proteinField.value) || 0;
                 const carbs = parseFloat(carbsField.value) || 0;
                 const fat = parseFloat(fatField.value) || 0;
+                const fiber = parseFloat(fiberField.value) || 0;
+                const sugar = parseFloat(sugarField.value) || 0;
 
-                if (calories > 0 || protein > 0 || carbs > 0 || fat > 0) {
+                if (calories > 0 || protein > 0 || carbs > 0 || fat > 0 || fiber > 0 || sugar > 0) {
                     const dvFat = 78;
                     const dvCarbs = 275;
                     const dvProtein = 50;
@@ -534,6 +554,8 @@
                     document.getElementById("preview-calories").textContent = Math.round(calories);
                     document.getElementById("preview-fat").textContent = fat.toFixed(1);
                     document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+                    document.getElementById("preview-fiber").textContent = fiber.toFixed(1);
+                    document.getElementById("preview-sugar").textContent = sugar.toFixed(1);
                     document.getElementById("preview-protein").textContent = protein.toFixed(1);
                     document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
                     document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
@@ -546,6 +568,8 @@
             proteinField.addEventListener("input", updateFromFields);
             carbsField.addEventListener("input", updateFromFields);
             fatField.addEventListener("input", updateFromFields);
+            fiberField.addEventListener("input", updateFromFields);
+            sugarField.addEventListener("input", updateFromFields);
         }
 
         // Add Meal form fields
@@ -553,6 +577,8 @@
         const mealProteinField = document.getElementById("id_total_protein");
         const mealCarbsField = document.getElementById("id_total_carbs");
         const mealFatField = document.getElementById("id_total_fat");
+        const mealFiberField = document.getElementById("id_total_fiber");
+        const mealSugarField = document.getElementById("id_total_sugar");
 
         if (mealCalorieField && nutritionPreview) {
             const updateMealFromFields = () => {
@@ -560,8 +586,10 @@
                 const protein = parseFloat(mealProteinField.value) || 0;
                 const carbs = parseFloat(mealCarbsField.value) || 0;
                 const fat = parseFloat(mealFatField.value) || 0;
+                const fiber = parseFloat(mealFiberField.value) || 0;
+                const sugar = parseFloat(mealSugarField.value) || 0;
 
-                if (calories > 0 || protein > 0 || carbs > 0 || fat > 0) {
+                if (calories > 0 || protein > 0 || carbs > 0 || fat > 0 || fiber > 0 || sugar > 0) {
                     const dvFat = 78;
                     const dvCarbs = 275;
                     const dvProtein = 50;
@@ -569,6 +597,8 @@
                     document.getElementById("preview-calories").textContent = Math.round(calories);
                     document.getElementById("preview-fat").textContent = fat.toFixed(1);
                     document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+                    document.getElementById("preview-fiber").textContent = fiber.toFixed(1);
+                    document.getElementById("preview-sugar").textContent = sugar.toFixed(1);
                     document.getElementById("preview-protein").textContent = protein.toFixed(1);
                     document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
                     document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
@@ -581,6 +611,8 @@
             mealProteinField.addEventListener("input", updateMealFromFields);
             mealCarbsField.addEventListener("input", updateMealFromFields);
             mealFatField.addEventListener("input", updateMealFromFields);
+            mealFiberField.addEventListener("input", updateMealFromFields);
+            mealSugarField.addEventListener("input", updateMealFromFields);
         }
     </script>
     {% endif %}

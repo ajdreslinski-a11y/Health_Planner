@@ -97,6 +97,7 @@ def dashboard(request):
         "latest_foods": [],
         "latest_goals": [],
         "latest_meals": [],
+        "latest_meal_items": [],
         "latest_progress": [],
         "latest_progress_rows": [],
         "latest_recent_users": [],
@@ -122,6 +123,9 @@ def dashboard(request):
         context["latest_meals"] = Meal.objects.filter(
             user=request.user
         ).order_by("-date", "-time")[:5]
+        context["latest_meal_items"] = MealItem.objects.select_related(
+            "meal", "food"
+        ).filter(meal__user=request.user).order_by("-meal_item_id")[:6]
         latest_progress = list(
             Progress.objects.filter(
                 user=request.user
@@ -592,13 +596,24 @@ def _recalc_meal_totals(meal: Meal) -> None:
         protein=Sum("protein"),
         carbs=Sum("carbs"),
         fat=Sum("fat"),
+        fiber=Sum("fiber"),
+        sugar=Sum("sugar"),
     )
     meal.total_calories = totals["calories"] or 0
     meal.total_protein = totals["protein"] or 0
     meal.total_carbs = totals["carbs"] or 0
     meal.total_fat = totals["fat"] or 0
+    meal.total_fiber = totals["fiber"] or 0
+    meal.total_sugar = totals["sugar"] or 0
     meal.save(
-        update_fields=["total_calories", "total_protein", "total_carbs", "total_fat"]
+        update_fields=[
+            "total_calories",
+            "total_protein",
+            "total_carbs",
+            "total_fat",
+            "total_fiber",
+            "total_sugar",
+        ]
     )
 
 
