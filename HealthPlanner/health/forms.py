@@ -138,7 +138,17 @@ class GoalForm(forms.ModelForm):
 class MealForm(forms.ModelForm):
     class Meta:
         model = Meal
-        fields = ["name", "meal_type", "date", "time", "notes"]
+        fields = [
+            "name",
+            "meal_type",
+            "date",
+            "time",
+            "total_calories",
+            "total_protein",
+            "total_carbs",
+            "total_fat",
+            "notes",
+        ]
         widgets = {
             "name": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "Meal name"}
@@ -146,6 +156,18 @@ class MealForm(forms.ModelForm):
             "meal_type": forms.Select(attrs={"class": "form-select"}),
             "date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
             "time": forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
+            "total_calories": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Calories", "step": "1", "min": 0}
+            ),
+            "total_protein": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Protein (g)", "step": "0.1", "min": 0}
+            ),
+            "total_carbs": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Carbs (g)", "step": "0.1", "min": 0}
+            ),
+            "total_fat": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Fat (g)", "step": "0.1", "min": 0}
+            ),
             "notes": forms.Textarea(
                 attrs={"class": "form-control", "placeholder": "Additional notes", "rows": 3}
             ),

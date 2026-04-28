@@ -25,6 +25,36 @@
             border-left: 4px solid #217a94;
             background: #f7fafb;
         }
+
+        .macro-donut {
+            width: 150px;
+            height: 150px;
+            display: grid;
+            place-items: center;
+        }
+        .macro-legend .swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .macro-tooltip {
+            position: fixed;
+            z-index: 2000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 120ms ease;
+            background: rgba(17, 24, 39, 0.92);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.2;
+            transform: translate(10px, 10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,.25);
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="bg-light min-vh-100">
@@ -50,6 +80,9 @@
                 </div>
                 <div class="col-auto">
                     <a href="{% url 'health:create_meal' %}" class="btn btn-outline-success">+ Log Meal</a>
+                </div>
+                <div class="col-auto">
+                    <a href="{% url 'health:create_food' %}" class="btn btn-outline-secondary">+ Add Food</a>
                 </div>
                 <div class="col-auto">
                     <a href="{% url 'health:create_progress' %}" class="btn btn-outline-secondary">+ Log Progress</a>
@@ -134,7 +167,6 @@
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Foods</div><div class="h4 mb-0">{{ stats.foods }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Goals</div><div class="h4 mb-0">{{ stats.goals }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Meals</div><div class="h4 mb-0">{{ stats.meals }}</div></div></div></div>
-                    <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Meal Items</div><div class="h4 mb-0">{{ stats.meal_items }}</div></div></div></div>
                     <div class="col-md-4 col-lg-2"><div class="card stat-card shadow-sm"><div class="card-body"><div class="text-muted small">Progress</div><div class="h4 mb-0">{{ stats.progress_entries }}</div></div></div></div>
                 </div>
             </section>
@@ -180,26 +212,6 @@
                                 </li>
                             {% empty %}
                                 <li class="list-group-item text-muted">No meals yet.</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card shadow-sm">
-                        <div class="card-header fw-semibold">Latest Meal Items</div>
-                        <ul class="list-group list-group-flush">
-                            {% for item in latest_meal_items %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-                                    <a class="text-decoration-none" href="{% url 'health:edit_meal_item' item.meal_item_id %}">
-                                        {{ item.food.name }} in {{ item.meal.name }} — {{ item.quantity_grams|floatformat:0 }} g
-                                    </a>
-                                    <form method="post" action="{% url 'health:delete_meal_item' item.meal_item_id %}" class="m-0">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                    </form>
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item text-muted">No meal items yet.</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -302,6 +314,129 @@
                         {% endif %}
                     </div>
                 </div>
+
+                {% if macro_tracker.total_g %}
+                <div class="card shadow-sm side-card mb-3">
+                    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                        <span>Macros today</span>
+                        <span class="text-muted small">{{ macro_tracker.total_g }}g total</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div class="macro-donut">
+                                <svg id="macroDonut" viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Macro split donut chart">
+                                    <g id="macroDonutSlices"></g>
+                                    <circle cx="60" cy="60" r="26" fill="#ffffff"></circle>
+                                    <text x="60" y="58" text-anchor="middle" font-size="12" fill="#111827" font-weight="700">
+                                        {{ macro_tracker.protein_pct }}%
+                                    </text>
+                                    <text x="60" y="74" text-anchor="middle" font-size="10" fill="#6b7280">
+                                        protein
+                                    </text>
+                                </svg>
+                            </div>
+                            <div class="macro-legend small">
+                                <div class="d-flex justify-content-between gap-3">
+                                    <span><span class="swatch" style="background:#1f8a57"></span>Protein</span>
+                                    <span class="text-muted">{{ macro_tracker.protein_g }}g</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 mt-1">
+                                    <span><span class="swatch" style="background:#f59e0b"></span>Carbs</span>
+                                    <span class="text-muted">{{ macro_tracker.carbs_g }}g</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 mt-1">
+                                    <span><span class="swatch" style="background:#2563eb"></span>Fat</span>
+                                    <span class="text-muted">{{ macro_tracker.fat_g }}g</span>
+                                </div>
+                                <div class="text-muted mt-2" style="max-width: 240px;">
+                                    Hover a slice to see grams.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{ macro_tracker|json_script:"macro-tracker-data" }}
+                <div id="macroTooltip" class="macro-tooltip" aria-hidden="true"></div>
+                <script>
+                    (function () {
+                        const dataTag = document.getElementById("macro-tracker-data");
+                        const svg = document.getElementById("macroDonut");
+                        const sliceGroup = document.getElementById("macroDonutSlices");
+                        const tooltip = document.getElementById("macroTooltip");
+                        if (!dataTag || !svg || !sliceGroup || !tooltip) return;
+
+                        const d = JSON.parse(dataTag.textContent || "{}");
+                        const parts = [
+                            { key: "protein", label: "Protein", pct: Number(d.protein_pct || 0), grams: Number(d.protein_g || 0), color: "#1f8a57" },
+                            { key: "carbs", label: "Carbs", pct: Number(d.carbs_pct || 0), grams: Number(d.carbs_g || 0), color: "#f59e0b" },
+                            { key: "fat", label: "Fat", pct: Number(d.fat_pct || 0), grams: Number(d.fat_g || 0), color: "#2563eb" },
+                        ].filter(p => p.pct > 0);
+
+                        // Donut arc rendering (percent slice size = larger slice looks bigger)
+                        const cx = 60, cy = 60;
+                        const rOuter = 48, rInner = 28;
+                        const startAtDeg = -90;
+
+                        function polar(cx, cy, r, deg) {
+                            const rad = (deg * Math.PI) / 180;
+                            return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+                        }
+
+                        function donutPath(startDeg, endDeg) {
+                            const p1 = polar(cx, cy, rOuter, startDeg);
+                            const p2 = polar(cx, cy, rOuter, endDeg);
+                            const p3 = polar(cx, cy, rInner, endDeg);
+                            const p4 = polar(cx, cy, rInner, startDeg);
+                            const largeArc = (endDeg - startDeg) % 360 > 180 ? 1 : 0;
+                            return [
+                                `M ${p1.x} ${p1.y}`,
+                                `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y}`,
+                                `L ${p3.x} ${p3.y}`,
+                                `A ${rInner} ${rInner} 0 ${largeArc} 0 ${p4.x} ${p4.y}`,
+                                "Z"
+                            ].join(" ");
+                        }
+
+                        function showTip(evt, text) {
+                            tooltip.textContent = text;
+                            tooltip.style.left = `${evt.clientX}px`;
+                            tooltip.style.top = `${evt.clientY}px`;
+                            tooltip.style.opacity = "1";
+                            tooltip.setAttribute("aria-hidden", "false");
+                        }
+
+                        function hideTip() {
+                            tooltip.style.opacity = "0";
+                            tooltip.setAttribute("aria-hidden", "true");
+                        }
+
+                        let angle = startAtDeg;
+                        sliceGroup.innerHTML = "";
+                        parts.forEach(p => {
+                            const sweep = (p.pct / 100) * 360;
+                            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                            path.setAttribute("d", donutPath(angle, angle + sweep));
+                            path.setAttribute("fill", p.color);
+                            path.setAttribute("data-label", p.label);
+                            path.setAttribute("data-grams", String(p.grams));
+                            path.style.cursor = "default";
+
+                            path.addEventListener("mousemove", (e) => {
+                                showTip(e, `${p.label}: ${p.grams}g`);
+                            });
+                            path.addEventListener("mouseenter", (e) => {
+                                showTip(e, `${p.label}: ${p.grams}g`);
+                            });
+                            path.addEventListener("mouseleave", hideTip);
+
+                            sliceGroup.appendChild(path);
+                            angle += sweep;
+                        });
+
+                        svg.addEventListener("mouseleave", hideTip);
+                    })();
+                </script>
+                {% endif %}
 
                 <div class="card shadow-sm coach-card mb-0">
                     <div class="card-header fw-semibold">Personalized cues</div>

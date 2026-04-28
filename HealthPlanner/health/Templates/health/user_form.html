@@ -29,6 +29,126 @@
             font-size: 0.85rem;
             padding: 0.25rem 0.5rem;
         }
+
+        /* Nutrition Label Style */
+        .nutrition-label {
+            border: 2px solid #000;
+            background: #fff;
+            padding: 8px;
+            font-family: 'Helvetica Black', 'Arial Black', sans-serif;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+        .nutrition-label .title {
+            font-size: 28px;
+            font-weight: 900;
+            border-bottom: 10px solid #000;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+        }
+        .nutrition-label .serving {
+            font-size: 14px;
+            border-bottom: 4px solid #000;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+        }
+        .nutrition-label .calories-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 4px solid #000;
+            padding: 4px 0;
+        }
+        .nutrition-label .calories-label {
+            font-size: 18px;
+            font-weight: 900;
+        }
+        .nutrition-label .calories-value {
+            font-size: 36px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .nutrition-label .daily-value {
+            text-align: right;
+            font-size: 12px;
+            border-bottom: 1px solid #000;
+            padding: 4px 0;
+        }
+        .nutrition-label .nutrient-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            border-bottom: 1px solid #ccc;
+            padding: 3px 0;
+        }
+        .nutrition-label .nutrient-row.thick {
+            border-bottom: 4px solid #000;
+        }
+        .nutrition-label .nutrient-row.indent {
+            padding-left: 16px;
+        }
+        .nutrition-label .bold {
+            font-weight: 900;
+        }
+        .nutrition-label .footnote {
+            font-size: 10px;
+            font-family: 'Arial', sans-serif;
+            margin-top: 8px;
+        }
+
+        /* Food Library Selection */
+        .food-library-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .food-library-section h6 {
+            margin-bottom: 12px;
+            color: #1f8a57;
+            font-weight: 600;
+        }
+        .food-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .food-item:hover {
+            border-color: #1f8a57;
+            background: #f0f9f4;
+        }
+        .food-item.selected {
+            border-color: #1f8a57;
+            background: #e8f5ec;
+        }
+        .food-item .food-name {
+            font-weight: 500;
+        }
+        .food-item .food-macros {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .food-item .select-btn {
+            font-size: 11px;
+            padding: 2px 8px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .tab-buttons .btn {
+            flex: 1;
+        }
     </style>
 </head>
 <body class="bg-light min-vh-100">
@@ -49,6 +169,70 @@
                         <div>{{ error }}</div>
                     {% endfor %}
                 </div>
+            {% endif %}
+
+            {% if foods_payload %}
+            <div class="tab-buttons">
+                <button type="button" class="btn btn-outline-success active" id="tab-manual">Add Manually</button>
+                <button type="button" class="btn btn-outline-secondary" id="tab-library">Select from Library</button>
+            </div>
+
+            <div id="library-section" class="food-library-section" style="display: none;">
+                <h6>Food Library</h6>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="food-search" placeholder="Search foods...">
+                </div>
+                <div id="food-list" style="max-height: 300px; overflow-y: auto;">
+                    {% for food in foods_payload %}
+                    <div class="food-item" data-id="{{ food.id }}" data-name="{{ food.name }}" data-brand="{{ food.brand|default:'' }}" data-calories="{{ food.calories_per_100g }}" data-protein="{{ food.protein_per_100g }}" data-carbs="{{ food.carbs_per_100g }}" data-fat="{{ food.fat_per_100g }}">
+                        <div>
+                            <div class="food-name">{{ food.name }}</div>
+                            {% if food.brand %}<div class="text-muted small">{{ food.brand }}</div>{% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="food-macros">{{ food.calories_per_100g|floatformat:0 }} cal</div>
+                            <div class="food-macros">P: {{ food.protein_per_100g|floatformat:0 }}g · C: {{ food.carbs_per_100g|floatformat:0 }}g · F: {{ food.fat_per_100g|floatformat:0 }}g</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if form_title == "Log a Meal" %}
+                <div class="mt-3" id="grams-input-section" style="display: none;">
+                    <label for="grams-input" class="form-label">Grams eaten</label>
+                    <input type="number" class="form-control" id="grams-input" placeholder="Enter grams" min="1" step="1" value="100">
+                    <small class="text-muted">Default is 100g. Change to match how much you ate.</small>
+                </div>
+                {% endif %}
+            </div>
+
+            <div id="nutrition-preview" class="nutrition-label mt-3" style="display: none;">
+                <div class="title">Nutrition Facts</div>
+                <div class="serving">Serving size: 100g</div>
+                <div class="calories-row">
+                    <span class="calories-label">Calories</span>
+                    <span class="calories-value" id="preview-calories">0</span>
+                </div>
+                <div class="daily-value">% Daily Value*</div>
+                <div class="nutrient-row">
+                    <span><span class="bold">Total Fat</span> <span id="preview-fat">0</span>g</span>
+                    <span class="bold" id="dv-fat">0%</span>
+                </div>
+                <div class="nutrient-row">
+                    <span><span class="bold">Total Carbohydrate</span> <span id="preview-carbs">0</span>g</span>
+                    <span class="bold" id="dv-carbs">0%</span>
+                </div>
+                <div class="nutrient-row indent">
+                    Dietary Fiber <span id="preview-fiber">0</span>g
+                </div>
+                <div class="nutrient-row indent">
+                    Sugars <span id="preview-sugar">0</span>g
+                </div>
+                <div class="nutrient-row thick">
+                    <span><span class="bold">Protein</span> <span id="preview-protein">0</span>g</span>
+                    <span class="bold" id="dv-protein">0%</span>
+                </div>
+                <div class="footnote">* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.</div>
+            </div>
             {% endif %}
 
             <form method="post" novalidate>
@@ -145,6 +329,259 @@
         }
 
         wireGoalSuggestions();
+    </script>
+    {% endif %}
+
+    {% if foods_payload %}
+    {{ foods_payload|json_script:"foods-payload-json" }}
+    <script>
+        // Food Library Selection
+        const foodsPayload = JSON.parse(document.getElementById("foods-payload-json").textContent);
+        let selectedFood = null;
+
+        // Tab switching
+        const tabManual = document.getElementById("tab-manual");
+        const tabLibrary = document.getElementById("tab-library");
+        const librarySection = document.getElementById("library-section");
+        const nutritionPreview = document.getElementById("nutrition-preview");
+
+        if (tabManual && tabLibrary) {
+            tabManual.addEventListener("click", () => {
+                tabManual.classList.add("active", "btn-success");
+                tabManual.classList.remove("btn-outline-secondary");
+                tabLibrary.classList.remove("active", "btn-success");
+                tabLibrary.classList.add("btn-outline-secondary");
+                librarySection.style.display = "none";
+            });
+
+            tabLibrary.addEventListener("click", () => {
+                tabLibrary.classList.add("active", "btn-success");
+                tabLibrary.classList.remove("btn-outline-secondary");
+                tabManual.classList.remove("active", "btn-success");
+                tabManual.classList.add("btn-outline-secondary");
+                librarySection.style.display = "block";
+            });
+        }
+
+        // Food search
+        const foodSearch = document.getElementById("food-search");
+        const foodList = document.getElementById("food-list");
+        
+        if (foodSearch && foodList) {
+            foodSearch.addEventListener("input", (e) => {
+                const query = e.target.value.toLowerCase();
+                const items = foodList.querySelectorAll(".food-item");
+                items.forEach(item => {
+                    const name = item.dataset.name.toLowerCase();
+                    const brand = item.dataset.brand.toLowerCase();
+                    if (name.includes(query) || brand.includes(query)) {
+                        item.style.display = "flex";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
+            });
+
+            // Food item selection
+            foodList.querySelectorAll(".food-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    // Remove previous selection
+                    foodList.querySelectorAll(".food-item").forEach(i => i.classList.remove("selected"));
+                    item.classList.add("selected");
+                    
+                    selectedFood = {
+                        id: item.dataset.id,
+                        name: item.dataset.name,
+                        brand: item.dataset.brand,
+                        calories: parseFloat(item.dataset.calories),
+                        protein: parseFloat(item.dataset.protein),
+                        carbs: parseFloat(item.dataset.carbs),
+                        fat: parseFloat(item.dataset.fat)
+                    };
+
+                    // Check which form is being used (Add Food vs Add Meal)
+                    const isAddFood = document.getElementById("id_calories_per_100g") !== null;
+                    const isAddMeal = document.getElementById("id_total_calories") !== null;
+                    const gramsInputSection = document.getElementById("grams-input-section");
+                    const gramsInput = document.getElementById("grams-input");
+
+                    if (isAddFood) {
+                        // Add Food form - fill in food details
+                        document.getElementById("id_name").value = selectedFood.name;
+                        document.getElementById("id_brand").value = selectedFood.brand || "";
+                        document.getElementById("id_calories_per_100g").value = selectedFood.calories;
+                        document.getElementById("id_protein_per_100g").value = selectedFood.protein;
+                        document.getElementById("id_carbs_per_100g").value = selectedFood.carbs;
+                        document.getElementById("id_fat_per_100g").value = selectedFood.fat;
+                    } else if (isAddMeal) {
+                        // Add Meal form - get grams and calculate
+                        const grams = parseFloat(gramsInput.value) || 100;
+                        const factor = grams / 100;
+                        
+                        // Fill in meal totals based on grams
+                        document.getElementById("id_name").value = selectedFood.name;
+                        document.getElementById("id_total_calories").value = Math.round(selectedFood.calories * factor);
+                        document.getElementById("id_total_protein").value = (selectedFood.protein * factor).toFixed(1);
+                        document.getElementById("id_total_carbs").value = (selectedFood.carbs * factor).toFixed(1);
+                        document.getElementById("id_total_fat").value = (selectedFood.fat * factor).toFixed(1);
+                        
+                        // Show grams input
+                        if (gramsInputSection) {
+                            gramsInputSection.style.display = "block";
+                        }
+                    }
+
+                    // Show nutrition label
+                    updateNutritionLabel();
+                    nutritionPreview.style.display = "block";
+                });
+            });
+        }
+
+        // Handle grams input change for Add Meal
+        const gramsInput = document.getElementById("grams-input");
+        if (gramsInput && selectedFood) {
+            gramsInput.addEventListener("input", () => {
+                const isAddMeal = document.getElementById("id_total_calories") !== null;
+                if (isAddMeal && selectedFood) {
+                    const grams = parseFloat(gramsInput.value) || 100;
+                    const factor = grams / 100;
+                    
+                    document.getElementById("id_total_calories").value = Math.round(selectedFood.calories * factor);
+                    document.getElementById("id_total_protein").value = (selectedFood.protein * factor).toFixed(1);
+                    document.getElementById("id_total_carbs").value = (selectedFood.carbs * factor).toFixed(1);
+                    document.getElementById("id_total_fat").value = (selectedFood.fat * factor).toFixed(1);
+                    
+                    // Update nutrition label with calculated values
+                    updateNutritionLabelFromFields();
+                }
+            });
+        }
+
+        function updateNutritionLabel() {
+            if (!selectedFood) return;
+
+            // Get grams if in Add Meal mode
+            const gramsInput = document.getElementById("grams-input");
+            const grams = gramsInput ? (parseFloat(gramsInput.value) || 100) : 100;
+            const factor = grams / 100;
+
+            // Calculate values based on grams
+            const calories = selectedFood.calories * factor;
+            const fat = selectedFood.fat * factor;
+            const carbs = selectedFood.carbs * factor;
+            const protein = selectedFood.protein * factor;
+
+            // Daily values (based on 2000 calorie diet)
+            const dvFat = 78;
+            const dvCarbs = 275;
+            const dvProtein = 50;
+
+            document.getElementById("preview-calories").textContent = Math.round(calories);
+            document.getElementById("preview-fat").textContent = fat.toFixed(1);
+            document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+            document.getElementById("preview-protein").textContent = protein.toFixed(1);
+            document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
+            document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
+            document.getElementById("dv-protein").textContent = Math.round((protein / dvProtein) * 100) + "%";
+        }
+
+        function updateNutritionLabelFromFields() {
+            // Update nutrition label from form field values (for when grams change)
+            const isAddMeal = document.getElementById("id_total_calories") !== null;
+            if (!isAddMeal) return;
+
+            const calories = parseFloat(document.getElementById("id_total_calories").value) || 0;
+            const protein = parseFloat(document.getElementById("id_total_protein").value) || 0;
+            const carbs = parseFloat(document.getElementById("id_total_carbs").value) || 0;
+            const fat = parseFloat(document.getElementById("id_total_fat").value) || 0;
+
+            if (calories > 0 || protein > 0 || carbs > 0 || fat > 0) {
+                const dvFat = 78;
+                const dvCarbs = 275;
+                const dvProtein = 50;
+
+                document.getElementById("preview-calories").textContent = Math.round(calories);
+                document.getElementById("preview-fat").textContent = fat.toFixed(1);
+                document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+                document.getElementById("preview-protein").textContent = protein.toFixed(1);
+                document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
+                document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
+                document.getElementById("dv-protein").textContent = Math.round((protein / dvProtein) * 100) + "%";
+                nutritionPreview.style.display = "block";
+            }
+        }
+
+        // Real-time nutrition label update for manual entry
+        const calorieField = document.getElementById("id_calories_per_100g");
+        const proteinField = document.getElementById("id_protein_per_100g");
+        const carbsField = document.getElementById("id_carbs_per_100g");
+        const fatField = document.getElementById("id_fat_per_100g");
+
+        // Add Food form fields
+        if (calorieField && nutritionPreview) {
+            const updateFromFields = () => {
+                const calories = parseFloat(calorieField.value) || 0;
+                const protein = parseFloat(proteinField.value) || 0;
+                const carbs = parseFloat(carbsField.value) || 0;
+                const fat = parseFloat(fatField.value) || 0;
+
+                if (calories > 0 || protein > 0 || carbs > 0 || fat > 0) {
+                    const dvFat = 78;
+                    const dvCarbs = 275;
+                    const dvProtein = 50;
+
+                    document.getElementById("preview-calories").textContent = Math.round(calories);
+                    document.getElementById("preview-fat").textContent = fat.toFixed(1);
+                    document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+                    document.getElementById("preview-protein").textContent = protein.toFixed(1);
+                    document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
+                    document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
+                    document.getElementById("dv-protein").textContent = Math.round((protein / dvProtein) * 100) + "%";
+                    nutritionPreview.style.display = "block";
+                }
+            };
+
+            calorieField.addEventListener("input", updateFromFields);
+            proteinField.addEventListener("input", updateFromFields);
+            carbsField.addEventListener("input", updateFromFields);
+            fatField.addEventListener("input", updateFromFields);
+        }
+
+        // Add Meal form fields
+        const mealCalorieField = document.getElementById("id_total_calories");
+        const mealProteinField = document.getElementById("id_total_protein");
+        const mealCarbsField = document.getElementById("id_total_carbs");
+        const mealFatField = document.getElementById("id_total_fat");
+
+        if (mealCalorieField && nutritionPreview) {
+            const updateMealFromFields = () => {
+                const calories = parseFloat(mealCalorieField.value) || 0;
+                const protein = parseFloat(mealProteinField.value) || 0;
+                const carbs = parseFloat(mealCarbsField.value) || 0;
+                const fat = parseFloat(mealFatField.value) || 0;
+
+                if (calories > 0 || protein > 0 || carbs > 0 || fat > 0) {
+                    const dvFat = 78;
+                    const dvCarbs = 275;
+                    const dvProtein = 50;
+
+                    document.getElementById("preview-calories").textContent = Math.round(calories);
+                    document.getElementById("preview-fat").textContent = fat.toFixed(1);
+                    document.getElementById("preview-carbs").textContent = carbs.toFixed(1);
+                    document.getElementById("preview-protein").textContent = protein.toFixed(1);
+                    document.getElementById("dv-fat").textContent = Math.round((fat / dvFat) * 100) + "%";
+                    document.getElementById("dv-carbs").textContent = Math.round((carbs / dvCarbs) * 100) + "%";
+                    document.getElementById("dv-protein").textContent = Math.round((protein / dvProtein) * 100) + "%";
+                    nutritionPreview.style.display = "block";
+                }
+            };
+
+            mealCalorieField.addEventListener("input", updateMealFromFields);
+            mealProteinField.addEventListener("input", updateMealFromFields);
+            mealCarbsField.addEventListener("input", updateMealFromFields);
+            mealFatField.addEventListener("input", updateMealFromFields);
+        }
     </script>
     {% endif %}
 </body>

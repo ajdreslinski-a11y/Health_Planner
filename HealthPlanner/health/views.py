@@ -97,11 +97,11 @@ def dashboard(request):
         "latest_foods": [],
         "latest_goals": [],
         "latest_meals": [],
-        "latest_meal_items": [],
         "latest_progress": [],
         "latest_progress_rows": [],
         "latest_recent_users": [],
         "calorie_tracker": {},
+        "macro_tracker": {},
         "maintenance_result": maintenance_snapshot,
         "coach_tips": [],
         "coach_bmi": None,
@@ -113,7 +113,6 @@ def dashboard(request):
             "foods": Food.objects.count(),
             "goals": Goal.objects.filter(user=request.user).count(),
             "meals": Meal.objects.filter(user=request.user).count(),
-            "meal_items": MealItem.objects.filter(meal__user=request.user).count(),
             "progress_entries": Progress.objects.filter(user=request.user).count(),
         }
         context["latest_foods"] = Food.objects.order_by("name")[:8]
@@ -123,9 +122,6 @@ def dashboard(request):
         context["latest_meals"] = Meal.objects.filter(
             user=request.user
         ).order_by("-date", "-time")[:5]
-        context["latest_meal_items"] = MealItem.objects.select_related(
-            "meal", "food"
-        ).filter(meal__user=request.user).order_by("-meal_item_id")[:6]
         latest_progress = list(
             Progress.objects.filter(
                 user=request.user
@@ -233,8 +229,13 @@ def dashboard(request):
             today_meals = Meal.objects.filter(
                 user=request.user,
                 date=today
-            ).aggregate(total=Sum("total_calories"))
-            raw_total = today_meals["total"]
+            ).aggregate(
+                calories=Sum("total_calories"),
+                protein=Sum("total_protein"),
+                carbs=Sum("total_carbs"),
+                fat=Sum("total_fat"),
+            )
+            raw_total = today_meals["calories"]
             consumed_units = round(float(raw_total or 0))
             daily_goal_units = active_goal.daily_calories
             
@@ -269,6 +270,27 @@ def dashboard(request):
                 "status": status,
                 "percentage": bar_pct,
                 "progress_style": f"width: {bar_pct}%",
+            }
+
+            protein_g = int(round(float(today_meals["protein"] or 0)))
+            carbs_g = int(round(float(today_meals["carbs"] or 0)))
+            fat_g = int(round(float(today_meals["fat"] or 0)))
+            total_g = max(protein_g + carbs_g + fat_g, 0)
+            if total_g > 0:
+                protein_pct = int(round((protein_g / float(total_g)) * 100))
+                carbs_pct = int(round((carbs_g / float(total_g)) * 100))
+                fat_pct = max(0, 100 - protein_pct - carbs_pct)
+            else:
+                protein_pct = carbs_pct = fat_pct = 0
+
+            context["macro_tracker"] = {
+                "protein_g": protein_g,
+                "carbs_g": carbs_g,
+                "fat_g": fat_g,
+                "protein_pct": protein_pct,
+                "carbs_pct": carbs_pct,
+                "fat_pct": fat_pct,
+                "total_g": total_g,
             }
     except (OperationalError, ProgrammingError):
         context["db_ready"] = False
@@ -436,6 +458,21 @@ def edit_progress(request, progress_id: int):
 
 @login_required
 def create_meal(request):
+    # Get all foods for the library selection
+    foods_payload = list(
+        Food.objects.order_by("name").values(
+            "id",
+            "name",
+            "brand",
+            "calories_per_100g",
+            "protein_per_100g",
+            "carbs_per_100g",
+            "fat_per_100g",
+            "fiber_per_100g",
+            "sugar_per_100g",
+        )
+    )
+    
     if request.method == "POST":
         form = MealForm(request.POST)
         if form.is_valid():
@@ -443,8 +480,8 @@ def create_meal(request):
             # Associate the logged-in user as the user for this meal
             meal.user = request.user
             meal.save()
-            messages.success(request, f"Meal '{meal.name}' created. Add foods to it.")
-            return redirect("health:edit_meal_items", meal_id=meal.meal_id)
+            messages.success(request, f"Meal '{meal.name}' logged.")
+            return redirect("health:dashboard")
     else:
         form = MealForm()
     
@@ -454,8 +491,9 @@ def create_meal(request):
         {
             "form": form,
             "form_title": "Log a Meal",
-            "form_description": "Record a meal with date, time, and notes.",
+            "form_description": "Enter the meal's macros directly (no foods needed).",
             "submit_label": "Log Meal",
+            "foods_payload": foods_payload,
         },
     )
 
@@ -581,6 +619,19 @@ def edit_meal_items(request, meal_id: int):
         form = MealItemForm()
 
     items = meal.meal_items.select_related("food").order_by("-meal_item_id")
+    foods_payload = list(
+        Food.objects.order_by("name").values(
+            "id",
+            "name",
+            "brand",
+            "calories_per_100g",
+            "protein_per_100g",
+            "carbs_per_100g",
+            "fat_per_100g",
+            "fiber_per_100g",
+            "sugar_per_100g",
+        )
+    )
     return render(
         request,
         "health/meal_items.html",
@@ -588,20 +639,33 @@ def edit_meal_items(request, meal_id: int):
             "meal": meal,
             "form": form,
             "items": items,
+            "foods_payload": foods_payload,
         },
     )
 
 
 @login_required
 def create_food(request):
+    # Get all foods for the library selection
+    foods_payload = list(
+        Food.objects.order_by("name").values(
+            "id",
+            "name",
+            "brand",
+            "calories_per_100g",
+            "protein_per_100g",
+            "carbs_per_100g",
+            "fat_per_100g",
+            "fiber_per_100g",
+            "sugar_per_100g",
+        )
+    )
+    
     if request.method == "POST":
         form = FoodForm(request.POST)
         if form.is_valid():
             food = form.save()
             messages.success(request, f"Added '{food.name}' to the food database.")
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
             return redirect("health:dashboard")
     else:
         form = FoodForm()
@@ -614,5 +678,6 @@ def create_food(request):
             "form_title": "Add a Food",
             "form_description": "Add a food (nutrition per 100g) so it can be reused in meals.",
             "submit_label": "Save food",
+            "foods_payload": foods_payload,
         },
     )
