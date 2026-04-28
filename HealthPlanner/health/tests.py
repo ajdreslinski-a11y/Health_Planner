@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Food, Meal, MealItem, User as HealthUser
+from .models import Food, Meal, MealItem, Progress, User as HealthUser
 
 
 class RecentUserFlowTests(TestCase):
@@ -278,3 +278,110 @@ class MealFlowTests(TestCase):
 
         self.assertEqual(edit_response.status_code, 404)
         self.assertEqual(delete_response.status_code, 404)
+
+
+class ProgressFlowTests(TestCase):
+    def setUp(self):
+        self.account = get_user_model().objects.create_user(
+            email="progress-owner@example.com",
+            name="Progress Owner",
+            age=34,
+            height="5.10",
+            weight="175.00",
+            password="testpass123",
+        )
+        self.other_account = get_user_model().objects.create_user(
+            email="other-progress-owner@example.com",
+            name="Other Progress Owner",
+            age=33,
+            height="5.11",
+            weight="180.00",
+            password="testpass123",
+        )
+        self.assertTrue(
+            self.client.login(
+                username="progress-owner@example.com", password="testpass123"
+            )
+        )
+        self.progress = Progress.objects.create(
+            user=self.account,
+            date="2026-04-27",
+            weight="174.50",
+            body_fat_percentage="18.20",
+            daily_calories_consumed=2200,
+            daily_protein_consumed=160,
+            daily_carbs_consumed=210,
+            daily_fat_consumed=70,
+        )
+        self.other_progress = Progress.objects.create(
+            user=self.other_account,
+            date="2026-04-27",
+            daily_calories_consumed=1800,
+            daily_protein_consumed=120,
+            daily_carbs_consumed=170,
+            daily_fat_consumed=60,
+        )
+
+    def test_dashboard_shows_log_progress_links_and_edit_progress_link(self):
+        response = self.client.get(reverse("health:dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("health:create_progress"))
+        self.assertContains(
+            response, reverse("health:edit_progress", args=[self.progress.progress_id])
+        )
+        self.assertNotContains(
+            response,
+            reverse("health:edit_progress", args=[self.other_progress.progress_id]),
+        )
+
+    def test_create_progress_creates_entry_for_signed_in_user(self):
+        response = self.client.post(
+            reverse("health:create_progress"),
+            {
+                "date": "2026-04-28",
+                "weight": "173.90",
+                "body_fat_percentage": "18.00",
+                "daily_calories_consumed": 2100,
+                "daily_protein_consumed": 155,
+                "daily_carbs_consumed": 200,
+                "daily_fat_consumed": 68,
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("health:dashboard"))
+        self.assertTrue(
+            Progress.objects.filter(
+                user=self.account,
+                date="2026-04-28",
+                daily_calories_consumed=2100,
+            ).exists()
+        )
+
+    def test_edit_progress_updates_entry(self):
+        response = self.client.post(
+            reverse("health:edit_progress", args=[self.progress.progress_id]),
+            {
+                "date": "2026-04-27",
+                "weight": "173.80",
+                "body_fat_percentage": "17.90",
+                "daily_calories_consumed": 2050,
+                "daily_protein_consumed": 150,
+                "daily_carbs_consumed": 190,
+                "daily_fat_consumed": 65,
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("health:dashboard"))
+        self.progress.refresh_from_db()
+        self.assertEqual(self.progress.daily_calories_consumed, 2050)
+        self.assertEqual(str(self.progress.weight), "173.80")
+
+    def test_cannot_edit_other_users_progress(self):
+        response = self.client.get(
+            reverse("health:edit_progress", args=[self.other_progress.progress_id])
+        )
+
+        self.assertEqual(response.status_code, 404)

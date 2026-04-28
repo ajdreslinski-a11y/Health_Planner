@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import Food, Meal, MealItem, User
+from .models import Food, Meal, MealItem, Progress, User
 
 
 class AccountSignUpForm(UserCreationForm):
@@ -205,5 +205,24 @@ class FoodForm(forms.ModelForm):
             ),
             "sugar_per_100g": forms.NumberInput(
                 attrs={"class": "form-control", "step": "0.01", "min": 0}
+            ),
+        }
+
+
+class ProgressForm(forms.ModelForm):
+    class Meta:
+        model = Progress
+        fields = [
+            "date",
+            "weight",
+            "daily_calories_consumed",
+        ]
+        widgets = {
+            "date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "weight": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01", "min": 0}
+            ),
+            "daily_calories_consumed": forms.NumberInput(
+                attrs={"class": "form-control", "min": 0}
             ),
         }
