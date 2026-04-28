@@ -17,6 +17,9 @@ urlpatterns = [
     path("meals/new/", views.create_meal, name="create_meal"),
     path("meals/<int:meal_id>/edit/", views.edit_meal, name="edit_meal"),
     path("meals/<int:meal_id>/delete/", views.delete_meal, name="delete_meal"),
+    path("meals/<int:meal_id>/items/", views.edit_meal_items, name="edit_meal_items"),
+    path("meal-items/<int:meal_item_id>/edit/", views.edit_meal_item, name="edit_meal_item"),
+    path("meal-items/<int:meal_item_id>/delete/", views.delete_meal_item, name="delete_meal_item"),
     path(
         "login/",
         auth_views.LoginView.as_view(

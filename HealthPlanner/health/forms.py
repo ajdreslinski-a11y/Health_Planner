@@ -147,6 +147,8 @@ class MealForm(forms.ModelForm):
             "total_protein",
             "total_carbs",
             "total_fat",
+            "total_fiber",
+            "total_sugar",
             "notes",
         ]
         widgets = {
@@ -168,10 +170,28 @@ class MealForm(forms.ModelForm):
             "total_fat": forms.NumberInput(
                 attrs={"class": "form-control", "placeholder": "Fat (g)", "step": "0.1", "min": 0}
             ),
+            "total_fiber": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Fiber (g)", "step": "0.1", "min": 0}
+            ),
+            "total_sugar": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Sugar (g)", "step": "0.1", "min": 0}
+            ),
             "notes": forms.Textarea(
                 attrs={"class": "form-control", "placeholder": "Additional notes", "rows": 3}
             ),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in (
+            "total_calories",
+            "total_protein",
+            "total_carbs",
+            "total_fat",
+            "total_fiber",
+            "total_sugar",
+        ):
+            self.fields[field_name].required = False
 
 
 class MealItemForm(forms.ModelForm):
